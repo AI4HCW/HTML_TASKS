@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Governance Desk — UK Health Data Rules</title>
+<style>
+  :root{
+    --nhs-blue:#005EB8; --nhs-dark-blue:#003087; --nhs-light-blue:#41B6E6;
+    --nhs-green:#009639; --nhs-yellow:#FFB81C; --nhs-red:#DA291C; --purple:#7E22CE;
+    --grey:#425563; --light-grey:#F0F4F5; --text:#212B32; --text-mid:#4C6272;
+    --border:#D8DDE0; --radius:10px; --shadow:0 2px 12px rgba(0,0,0,.09);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Frutiger',Arial,Helvetica,sans-serif;background:#eef2f6;color:var(--text);line-height:1.6;padding:20px;}
+  .wrap{max-width:820px;margin:0 auto;}
+  .hero{background:linear-gradient(135deg,var(--nhs-dark-blue),var(--purple) 75%,#a97be0);color:#fff;border-radius:var(--radius);padding:26px 28px;margin-bottom:16px;}
+  .hero .badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 14px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;}
+  .hero h1{font-size:clamp(22px,4vw,29px);margin-bottom:8px;}
+  .hero p{opacity:.94;font-size:15px;max-width:640px;}
+
+  .statbar{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
+  .stat{flex:1;min-width:140px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 16px;}
+  .stat .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-mid);font-weight:700;margin-bottom:4px;}
+  .stat .val{font-size:22px;font-weight:800;color:var(--nhs-dark-blue);}
+  .trust-bar{height:8px;border-radius:6px;background:var(--light-grey);overflow:hidden;margin-top:6px;}
+  .trust-fill{height:100%;border-radius:6px;background:var(--nhs-green);transition:width .4s, background .4s;}
+
+  .card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px;margin-bottom:16px;}
+
+  .timer-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;color:var(--text-mid);font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
+  .timer-bar{height:8px;background:var(--light-grey);border-radius:6px;overflow:hidden;margin-bottom:18px;}
+  .timer-fill{height:100%;border-radius:6px;background:var(--nhs-green);width:100%;}
+  .timer-fill.warn{background:var(--nhs-yellow);}
+  .timer-fill.danger{background:var(--nhs-red);}
+
+  .scenario-tag{display:inline-block;background:var(--light-grey);color:var(--text-mid);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:3px 10px;border-radius:12px;margin-bottom:12px;}
+  .scenario-card{border:2px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:18px;background:var(--light-grey);font-size:15.5px;color:var(--text);}
+
+  .choices{display:flex;flex-direction:column;gap:10px;}
+  .choice-btn{border:2px solid var(--border);border-radius:10px;background:#fff;padding:13px 16px;font-size:14.5px;font-weight:600;color:var(--text);cursor:pointer;transition:.12s;text-align:left;}
+  .choice-btn:hover:not(:disabled){border-color:var(--purple);background:#FAF5FF;}
+  .choice-btn:disabled{cursor:default;}
+  .choice-btn.correct{background:#E6F4EA;border-color:var(--nhs-green);color:#0d5c2e;animation:pulseGood .4s;}
+  .choice-btn.incorrect{background:#FDE7E9;border-color:var(--nhs-red);color:#8a1a12;animation:shake .35s;}
+  @keyframes pulseGood{0%{background:#c6ecd2;}100%{background:#E6F4EA;}}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
+
+  .feedback{border-radius:0 8px 8px 0;padding:14px 16px;margin-top:16px;margin-bottom:6px;font-size:14.5px;display:none;}
+  .feedback.show{display:block;}
+  .feedback.good{background:#E6F4EA;border-left:4px solid var(--nhs-green);}
+  .feedback.bad{background:#FDE7E9;border-left:4px solid var(--nhs-red);}
+  .feedback b{display:block;margin-bottom:4px;color:var(--text);}
+  .btn{border:none;border-radius:8px;padding:11px 20px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s;}
+  .btn-primary{background:var(--nhs-blue);color:#fff;} .btn-primary:hover{background:var(--nhs-dark-blue);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-row{text-align:right;margin-top:14px;}
+  .end{text-align:center;}
+  .end .score{font-size:46px;font-weight:800;color:var(--nhs-dark-blue);margin:8px 0;}
+  .end .verdict{font-weight:700;font-size:15px;border-radius:8px;padding:10px 16px;display:inline-block;margin-bottom:12px;}
+  .verdict.great{background:#E6F4EA;color:#0d5c2e;}
+  .verdict.ok{background:#FFF6E0;color:#8a5a00;}
+  .verdict.poor{background:#FDE7E9;color:#8a1a12;}
+  .takeaways{text-align:left;margin-top:16px;}
+  .takeaways .t{display:flex;gap:10px;margin-bottom:10px;font-size:14px;color:var(--text-mid);}
+  .takeaways .t b{color:var(--text);}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="badge">Step 1.6 · Data: the foundation of AI</div>
+    <h1>Governance Desk</h1>
+    <p>Eight real workplace situations, 20 seconds each. Pick the response that reflects how UK GDPR, the Caldicott Principles and the Goldacre Review actually expect health data to be handled.</p>
+  </div>
+
+  <div class="statbar">
+    <div class="stat">
+      <div class="lbl">Patient trust</div>
+      <div class="val" id="trustVal">100%</div>
+      <div class="trust-bar"><div class="trust-fill" id="trustFill" style="width:100%"></div></div>
+    </div>
+    <div class="stat">
+      <div class="lbl">Streak</div>
+      <div class="val" id="streakVal">0</div>
+    </div>
+    <div class="stat">
+      <div class="lbl">Scenario</div>
+      <div class="val" id="scenarioCountVal">1 / 8</div>
+    </div>
+  </div>
+
+  <div class="card" id="gameCard">
+    <div class="timer-row">
+      <span>Time to decide</span>
+      <span id="timerLabel">20.0s</span>
+    </div>
+    <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+
+    <div class="scenario-tag" id="scenarioTag">Scenario</div>
+    <div class="scenario-card" id="scenarioCard"></div>
+
+    <div class="choices" id="choicesBox"></div>
+
+    <div class="feedback" id="feedback"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="nextBtn" disabled>Next scenario →</button>
+    </div>
+  </div>
+
+  <div class="card end hidden" id="endCard">
+    <div class="scenario-tag">Shift complete</div>
+    <h2 style="color:var(--nhs-dark-blue);margin-bottom:6px;">Final patient trust score</h2>
+    <div class="score" id="finalScore">100%</div>
+    <div id="verdictBox"></div>
+    <p style="color:var(--text-mid);">None of this governance is bureaucracy for its own sake. UK GDPR, the Caldicott Principles and the Goldacre Review exist because health data is uniquely sensitive and uniquely powerful — the same data that can train a life-saving AI tool can also cause real harm if it's mishandled.</p>
+    <div class="takeaways">
+      <div class="t"><b>UK GDPR</b> sets the legal baseline — lawful basis, data minimisation, breach reporting within 72 hours.</div>
+      <div class="t"><b>The Caldicott Principles</b> (and every organisation's Caldicott Guardian) govern how confidential patient information is used and shared.</div>
+      <div class="t"><b>The Goldacre Review</b> pushed for secure data environments — so research can happen without raw patient data ever leaving NHS control.</div>
+    </div>
+    <div class="btn-row" style="justify-content:center;display:flex;margin-top:16px;">
+      <button class="btn btn-primary" onclick="restart()">Run the desk again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const scenarios = [
+  {
+    tag: "Data sharing",
+    text: "A colleague wants to email a spreadsheet of 200 patients' names, NHS numbers and diagnoses to an external research partner today, with no other checks.",
+    choices: [
+      { label: "That's fine — research is a good cause, so consent isn't needed.", correct:false },
+      { label: "Stop and check: is there a lawful basis and an approved data-sharing agreement, ideally with the data de-identified first?", correct:true },
+      { label: "It's fine as long as the spreadsheet is password-protected.", correct:false }
+    ],
+    explain: "Sharing identifiable patient data needs a lawful basis under UK GDPR and sign-off consistent with the Caldicott Principles — a password alone, or good intentions alone, aren't enough."
+  },
+  {
+    tag: "Caldicott Guardians",
+    text: "A new starter asks why every NHS organisation has a named \"Caldicott Guardian\".",
+    choices: [
+      { label: "They're the IT lead responsible for cybersecurity software.", correct:false },
+      { label: "A senior person responsible for protecting patient information and enabling appropriate information sharing.", correct:true },
+      { label: "An external auditor who visits once a year.", correct:false }
+    ],
+    explain: "Caldicott Guardians are a named role in every NHS and social care organisation, responsible for safeguarding how confidential patient information is used and shared, under the Caldicott Principles."
+  },
+  {
+    tag: "Before deployment",
+    text: "Your trust wants to build a new AI tool using patient data. What has to happen before it can go ahead?",
+    choices: [
+      { label: "A Data Protection Impact Assessment (DPIA), to identify and reduce privacy risks.", correct:true },
+      { label: "Nothing extra — if the data is already in the trust's system, it can be used for anything.", correct:false },
+      { label: "Just a sign-off from the AI vendor's own compliance team.", correct:false }
+    ],
+    explain: "UK GDPR requires a DPIA for processing likely to result in high risk to individuals — which most new health AI projects trigger — before development or deployment."
+  },
+  {
+    tag: "Anonymisation",
+    text: "A dataset for an AI research project has names and NHS numbers removed, but keeps postcode, date of birth and a rare diagnosis. Is this dataset anonymised?",
+    choices: [
+      { label: "Yes — removing names and NHS numbers is enough.", correct:false },
+      { label: "Not necessarily — that combination of details could still identify someone, so it's likely still personal data.", correct:true },
+      { label: "It doesn't matter, because it's for research.", correct:false }
+    ],
+    explain: "True anonymisation has to make re-identification very unlikely by any means reasonably likely to be used. A handful of small facts like postcode, DOB and a rare diagnosis can still narrow a dataset down to one person — this is usually pseudonymisation, and remains personal data under UK GDPR."
+  },
+  {
+    tag: "Patient choice",
+    text: "A patient tells you they don't want their data used for research or planning beyond their own direct care.",
+    choices: [
+      { label: "They can register a National Data Opt-out, which excludes their confidential information from most research and planning uses.", correct:true },
+      { label: "There's no way to opt out — NHS data use is automatic.", correct:false },
+      { label: "They'd need to leave the NHS entirely to stop this.", correct:false }
+    ],
+    explain: "The National Data Opt-out gives patients control over whether their confidential patient information is used for research and planning purposes beyond their individual care."
+  },
+  {
+    tag: "Secure data environments",
+    text: "Why did the Goldacre Review recommend moving toward \"secure data environments\" for research, rather than sending raw patient data out to researchers?",
+    choices: [
+      { label: "So approved analysts can work with the data inside a controlled environment, without raw patient data ever leaving NHS control.", correct:true },
+      { label: "To make research slower and harder for researchers.", correct:false },
+      { label: "Because it's cheaper than transferring data.", correct:false }
+    ],
+    explain: "Secure data environments — like OpenSAFELY — let analysts run approved code against the data remotely. The data itself never leaves, which improves both security and public trust, a central Goldacre Review recommendation."
+  },
+  {
+    tag: "Breach reporting",
+    text: "A laptop holding an unencrypted spreadsheet of patient data is lost. What's the regulatory clock that starts ticking?",
+    choices: [
+      { label: "Up to 72 hours to report a qualifying personal data breach to the ICO under UK GDPR.", correct:true },
+      { label: "No formal requirement, as long as it turns up again.", correct:false },
+      { label: "A year, in line with the annual data audit.", correct:false }
+    ],
+    explain: "UK GDPR requires organisations to report qualifying personal data breaches to the Information Commissioner's Office within 72 hours of becoming aware of them."
+  },
+  {
+    tag: "Duty of confidentiality",
+    text: "A patient asks why their doctor needs consent — or another legal basis — before sharing their confidential information with a third party for a new, unrelated purpose.",
+    choices: [
+      { label: "Because of the common law duty of confidentiality — information shared for care shouldn't be reused elsewhere without a proper basis.", correct:true },
+      { label: "That expectation stops applying once the information is on a computer system.", correct:false },
+      { label: "This only applies to mental health records.", correct:false }
+    ],
+    explain: "Alongside UK GDPR, the common law duty of confidentiality — a principle older than GDPR itself — means information given in confidence shouldn't be used or shared for a new purpose without consent or another valid legal basis."
+  }
+];
+
+const ROUND_MS = 20000;
+const TRUST_STEP = 100 / scenarios.length;
+
+let idx = 0, trust = 100, streak = 0, answered = false;
+let timerStart = null, timerRAF = null;
+
+function updateStatbar(){
+  document.getElementById('trustVal').textContent = Math.round(trust) + '%';
+  const fill = document.getElementById('trustFill');
+  fill.style.width = Math.max(0, trust) + '%';
+  fill.style.background = trust > 60 ? 'var(--nhs-green)' : (trust > 30 ? 'var(--nhs-yellow)' : 'var(--nhs-red)');
+  document.getElementById('streakVal').textContent = streak;
+  document.getElementById('scenarioCountVal').textContent = `${Math.min(idx+1, scenarios.length)} / ${scenarios.length}`;
+}
+
+function renderScenario(){
+  const s = scenarios[idx];
+  document.getElementById('scenarioTag').textContent = s.tag;
+  document.getElementById('scenarioCard').textContent = s.text;
+  document.getElementById('choicesBox').innerHTML = s.choices.map((c,i) =>
+    `<button class="choice-btn" data-i="${i}" onclick="pick(${i})">${c.label}</button>`
+  ).join('');
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('feedback').innerHTML = '';
+  document.getElementById('nextBtn').disabled = true;
+  answered = false;
+  updateStatbar();
+  startTimer();
+}
+
+function startTimer(){
+  timerStart = performance.now();
+  const fillEl = document.getElementById('timerFill');
+  const labelEl = document.getElementById('timerLabel');
+  fillEl.className = 'timer-fill';
+  function tick(now){
+    if(answered) return;
+    const elapsed = now - timerStart;
+    const remaining = Math.max(0, ROUND_MS - elapsed);
+    const pct = (remaining / ROUND_MS) * 100;
+    fillEl.style.width = pct + '%';
+    labelEl.textContent = (remaining/1000).toFixed(1) + 's';
+    if(pct < 50 && pct >= 20) fillEl.className = 'timer-fill warn';
+    else if(pct < 20) fillEl.className = 'timer-fill danger';
+    else fillEl.className = 'timer-fill';
+    if(remaining <= 0){ handleTimeout(); return; }
+    timerRAF = requestAnimationFrame(tick);
+  }
+  timerRAF = requestAnimationFrame(tick);
+}
+
+function stopTimer(){ if(timerRAF) cancelAnimationFrame(timerRAF); }
+
+function revealChoices(){
+  const s = scenarios[idx];
+  document.querySelectorAll('#choicesBox .choice-btn').forEach((b,bi)=>{
+    b.disabled = true;
+    if(s.choices[bi].correct) b.classList.add('correct');
+  });
+}
+
+function handleTimeout(){
+  if(answered) return;
+  answered = true;
+  stopTimer();
+  const s = scenarios[idx];
+  revealChoices();
+  streak = 0;
+  trust = Math.max(0, trust - TRUST_STEP);
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback show bad';
+  fb.innerHTML = `<b>Time's up.</b>${s.explain}`;
+  updateStatbar();
+  document.getElementById('nextBtn').disabled = false;
+}
+
+function pick(i){
+  if(answered) return;
+  answered = true;
+  stopTimer();
+  const s = scenarios[idx];
+  const wasRight = s.choices[i].correct;
+  document.querySelectorAll('#choicesBox .choice-btn').forEach((b,bi)=>{
+    b.disabled = true;
+    if(s.choices[bi].correct) b.classList.add('correct');
+    else if (bi === i) b.classList.add('incorrect');
+  });
+  if(wasRight){ streak++; } else { streak = 0; trust = Math.max(0, trust - TRUST_STEP); }
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback show ' + (wasRight ? 'good' : 'bad');
+  fb.innerHTML = `<b>${wasRight ? "Good call." : "Not the safest call here."}</b>${s.explain}`;
+  updateStatbar();
+  document.getElementById('nextBtn').disabled = false;
+}
+
+document.getElementById('nextBtn').addEventListener('click', ()=>{
+  idx++;
+  if(idx >= scenarios.length){
+    document.getElementById('gameCard').classList.add('hidden');
+    document.getElementById('endCard').classList.remove('hidden');
+    const finalPct = Math.round(trust);
+    document.getElementById('finalScore').textContent = finalPct + '%';
+    const verdict = document.getElementById('verdictBox');
+    let cls, msg;
+    if(finalPct >= 85){ cls='great'; msg='Strong shift — patients would be well served by these calls.'; }
+    else if(finalPct >= 50){ cls='ok'; msg='Mixed shift — a few calls here could have eroded patient trust.'; }
+    else { cls='poor'; msg='Rough shift — worth another run through the governance basics.'; }
+    verdict.innerHTML = `<div class="verdict ${cls}">${msg}</div>`;
+  } else {
+    renderScenario();
+  }
+});
+
+function restart(){
+  idx = 0; trust = 100; streak = 0;
+  document.getElementById('endCard').classList.add('hidden');
+  document.getElementById('gameCard').classList.remove('hidden');
+  renderScenario();
+}
+
+renderScenario();
+</script>
+</body>
+</html>

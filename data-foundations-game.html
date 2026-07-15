@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Intake Desk — Protect the Model</title>
+<style>
+  :root{
+    --nhs-blue:#005EB8; --nhs-dark-blue:#003087; --nhs-light-blue:#41B6E6;
+    --nhs-green:#009639; --nhs-yellow:#FFB81C; --nhs-red:#DA291C; --purple:#7E22CE;
+    --grey:#425563; --light-grey:#F0F4F5; --text:#212B32; --text-mid:#4C6272;
+    --border:#D8DDE0; --radius:10px; --shadow:0 2px 12px rgba(0,0,0,.09);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Frutiger',Arial,Helvetica,sans-serif;background:#eef2f6;color:var(--text);line-height:1.6;padding:20px;}
+  .wrap{max-width:820px;margin:0 auto;}
+  .hero{background:linear-gradient(135deg,var(--nhs-dark-blue),var(--nhs-blue) 70%,var(--nhs-light-blue));color:#fff;border-radius:var(--radius);padding:26px 28px;margin-bottom:16px;}
+  .hero .badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 14px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;}
+  .hero h1{font-size:clamp(22px,4vw,29px);margin-bottom:8px;}
+  .hero p{opacity:.94;font-size:15px;max-width:640px;}
+
+  .statbar{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
+  .stat{flex:1;min-width:140px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 16px;}
+  .stat .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-mid);font-weight:700;margin-bottom:4px;}
+  .stat .val{font-size:22px;font-weight:800;color:var(--nhs-dark-blue);}
+  .integrity-bar{height:8px;border-radius:6px;background:var(--light-grey);overflow:hidden;margin-top:6px;}
+  .integrity-fill{height:100%;border-radius:6px;background:var(--nhs-green);transition:width .4s, background .4s;}
+  .streak-flame{color:var(--nhs-yellow);font-weight:800;}
+
+  .card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px;margin-bottom:16px;}
+
+  .timer-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;color:var(--text-mid);font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
+  .timer-bar{height:8px;background:var(--light-grey);border-radius:6px;overflow:hidden;margin-bottom:16px;}
+  .timer-fill{height:100%;border-radius:6px;background:var(--nhs-green);width:100%;}
+  .timer-fill.warn{background:var(--nhs-yellow);}
+  .timer-fill.danger{background:var(--nhs-red);}
+
+  .tag{display:inline-block;background:var(--light-grey);color:var(--text-mid);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:3px 10px;border-radius:12px;margin-bottom:10px;}
+  .instruction{font-size:13.5px;color:var(--text-mid);margin-bottom:10px;}
+  .record{border:2px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px;}
+  .record-head{background:var(--light-grey);padding:10px 16px;font-weight:700;font-size:14px;color:var(--nhs-dark-blue);border-bottom:2px solid var(--border);}
+  .field{display:flex;justify-content:space-between;gap:12px;width:100%;text-align:left;background:#fff;border:none;border-bottom:1px solid var(--border);padding:14px 16px;font-size:14.5px;cursor:pointer;transition:.12s;font-family:inherit;color:var(--text);}
+  .field:last-child{border-bottom:none;}
+  .field:hover:not(:disabled){background:#F3F8FD;transform:scale(1.01);}
+  .field .lbl{color:var(--text-mid);font-weight:700;flex-shrink:0;}
+  .field .val{text-align:right;}
+  .field.correct{background:#E6F4EA;border-left:4px solid var(--nhs-green);animation:pulseGood .4s;}
+  .field.incorrect{background:#FDE7E9;border-left:4px solid var(--nhs-red);animation:shake .35s;}
+  .field:disabled{cursor:default;}
+  @keyframes pulseGood{0%{background:#c6ecd2;}100%{background:#E6F4EA;}}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
+
+  .feedback{border-radius:0 8px 8px 0;padding:14px 16px;margin-top:4px;margin-bottom:14px;font-size:14.5px;display:none;}
+  .feedback.show{display:block;}
+  .feedback.good{background:#E6F4EA;border-left:4px solid var(--nhs-green);}
+  .feedback.bad{background:#FDE7E9;border-left:4px solid var(--nhs-red);}
+  .feedback b{display:block;margin-bottom:4px;color:var(--text);}
+  .btn{border:none;border-radius:8px;padding:11px 20px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s;}
+  .btn-primary{background:var(--nhs-blue);color:#fff;} .btn-primary:hover{background:var(--nhs-dark-blue);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-row{text-align:right;}
+  .end{text-align:center;}
+  .end .score{font-size:46px;font-weight:800;color:var(--nhs-dark-blue);margin:8px 0;}
+  .end .verdict{font-weight:700;font-size:15px;border-radius:8px;padding:10px 16px;display:inline-block;margin-bottom:12px;}
+  .verdict.great{background:#E6F4EA;color:#0d5c2e;}
+  .verdict.ok{background:#FFF6E0;color:#8a5a00;}
+  .verdict.poor{background:#FDE7E9;color:#8a1a12;}
+  .takeaways{text-align:left;margin-top:16px;}
+  .takeaways .t{display:flex;gap:10px;margin-bottom:10px;font-size:14px;color:var(--text-mid);}
+  .takeaways .t b{color:var(--text);}
+  .hidden{display:none;}
+  @media(max-width:600px){ .card{padding:16px;} .field{flex-direction:column;gap:2px;} .field .val{text-align:left;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="badge">Step 1.6 · Data: the foundation of AI</div>
+    <h1>Data Intake Desk</h1>
+    <p>You're on the intake desk for a new AI model's training data. Eight records are queued. You've got 15 seconds on each one to catch the problem before it's waved through — miss it, and the model quietly learns the wrong lesson.</p>
+  </div>
+
+  <div class="statbar">
+    <div class="stat">
+      <div class="lbl">Model integrity</div>
+      <div class="val" id="integrityVal">100%</div>
+      <div class="integrity-bar"><div class="integrity-fill" id="integrityFill" style="width:100%"></div></div>
+    </div>
+    <div class="stat">
+      <div class="lbl">Streak</div>
+      <div class="val"><span class="streak-flame" id="streakVal">0</span></div>
+    </div>
+    <div class="stat">
+      <div class="lbl">Record</div>
+      <div class="val" id="recordCountVal">1 / 8</div>
+    </div>
+  </div>
+
+  <div class="card" id="gameCard">
+    <div class="timer-row">
+      <span>Time to catch it</span>
+      <span id="timerLabel">15.0s</span>
+    </div>
+    <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+
+    <div class="tag" id="recordTag">Record</div>
+    <p class="instruction">Click the field that would mislead a model trained on this record.</p>
+    <div class="record" id="recordBox"></div>
+
+    <div class="feedback" id="feedback"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="nextBtn" disabled>Next record →</button>
+    </div>
+  </div>
+
+  <div class="card end hidden" id="endCard">
+    <div class="tag">Shift complete</div>
+    <h2 style="color:var(--nhs-dark-blue);margin-bottom:6px;">Final model integrity</h2>
+    <div class="score" id="finalScore">100%</div>
+    <div id="verdictBox"></div>
+    <p style="color:var(--text-mid);">Every problem on the desk today was a small example of the same idea: an AI model can only be as good as the data underneath it. Multiplied across millions of records, catches like these are how data quality becomes — or avoids becoming — the bias, blind spots and generalisability failures you'll dig into properly in Week 2.</p>
+    <div class="takeaways">
+      <div class="t"><b>Ask where it came from.</b> Data collected for one purpose (like billing) doesn't automatically suit another (like diagnosis).</div>
+      <div class="t"><b>Ask who's in it — and who isn't.</b> A model is only as representative as its training data.</div>
+      <div class="t"><b>Ask how current it is.</b> Data has a shelf life; stale entries produce stale — and sometimes unsafe — recommendations.</div>
+    </div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-primary" onclick="restart()">Run the desk again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const records = [
+  {
+    tag: "Missing data",
+    head: "Patient record — A. Kowalski, 34",
+    fields: [
+      {label:"Presenting complaint", value:"Facial swelling, breathing difficulty", correct:false},
+      {label:"Known allergies", value:"[blank]", correct:true},
+      {label:"Medications", value:"None recorded", correct:false}
+    ],
+    explain:"A blank allergy field isn't the same as \"no known allergies\" — but many systems store them identically. A model trained on data like this may learn to under-predict allergy risk simply because the field was never filled in, not because the risk wasn't there."
+  },
+  {
+    tag: "Duplicate record",
+    head: "Patient search results",
+    fields: [
+      {label:"Record 1", value:"J. Smith, DOB 14/03/1957, NHS no. ...6532", correct:true},
+      {label:"Record 2", value:"J. Smith, DOB 14/03/1957, NHS no. ...6523", correct:true},
+      {label:"Record 3", value:"Consultation notes, cardiology, 2024", correct:false}
+    ],
+    explain:"Two records for the same patient, split by a transposed digit in the NHS number. Duplicate or fragmented records mean an AI sees two thin, incomplete histories instead of one complete one — weakening the very pattern it's meant to learn."
+  },
+  {
+    tag: "Inconsistent units",
+    head: "Medication chart — levothyroxine",
+    fields: [
+      {label:"Entry (GP system)", value:"Dose: 0.5 mg", correct:false},
+      {label:"Entry (hospital system)", value:"Dose: 500 mcg", correct:true},
+      {label:"Frequency", value:"Once daily", correct:false}
+    ],
+    explain:"500 mcg and 0.5 mg are the same dose — but if a model wasn't taught to normalise units across systems, it may treat these as two different amounts entirely, corrupting anything it learns about dosing patterns."
+  },
+  {
+    tag: "Structured vs. free text",
+    head: "Diagnosis summary",
+    fields: [
+      {label:"Structured diagnosis code", value:"E11 — Type 2 Diabetes Mellitus", correct:true},
+      {label:"Clinician's free-text note", value:"\"Atypical picture — query MODY, not yet confirmed\"", correct:false},
+      {label:"Date recorded", value:"3 years ago", correct:false}
+    ],
+    explain:"Most models train on the structured code, not the nuance sitting in free text. Here, real clinical doubt about the diagnosis lives only in a note the model will probably never see — so it learns the confident label, not the uncertainty behind it."
+  },
+  {
+    tag: "Stale data",
+    head: "Medications on file — R. Osei, 71",
+    fields: [
+      {label:"Current medications", value:"Warfarin 5mg (last reviewed 2019)", correct:true},
+      {label:"Allergies", value:"Penicillin", correct:false},
+      {label:"Next of kin", value:"On file", correct:false}
+    ],
+    explain:"Data has a shelf life. A five-year-old medication entry may no longer be true — this patient may have since switched to a different anticoagulant. A model trained on stale records can quietly recommend around a drug the patient stopped taking years ago."
+  },
+  {
+    tag: "Ground-truth error",
+    head: "Discharge summary",
+    fields: [
+      {label:"Discharge diagnosis (coded)", value:"J18.9 — Pneumonia", correct:true},
+      {label:"Clinical notes", value:"Bilateral crackles, raised JVP, peripheral oedema, poor response to antibiotics", correct:false},
+      {label:"Length of stay", value:"6 days", correct:false}
+    ],
+    explain:"The notes describe a picture that looks a lot more like heart failure than straightforward pneumonia. If the label itself — the \"ground truth\" — is wrong, the model learns the wrong lesson entirely. No amount of clever modelling can fix a mislabelled example."
+  },
+  {
+    tag: "Unrepresentative sample",
+    head: "Training dataset summary — skin lesion classifier",
+    fields: [
+      {label:"Sample size", value:"40,000 images", correct:false},
+      {label:"Demographic makeup", value:"94% from lighter Fitzpatrick skin types (I–III)", correct:true},
+      {label:"Source", value:"Three dermatology clinics, one country", correct:false}
+    ],
+    explain:"A model built mostly on one skin type is likely to perform far less reliably for anyone outside it — this is a representativeness problem, not a one-off error. It's exactly the kind of gap that only shows up once the tool meets a more diverse population."
+  },
+  {
+    tag: "Repurposed data",
+    head: "Dataset provenance note",
+    fields: [
+      {label:"Original purpose", value:"Hospital billing and coding records", correct:true},
+      {label:"Repurposed for", value:"Training a diagnostic triage model", correct:false},
+      {label:"Time span", value:"2015–2022", correct:false}
+    ],
+    explain:"Data collected for one reason — like billing — often lacks the granularity or clinical accuracy needed for another, like diagnosis. Repurposed data can look plentiful and convenient while quietly mismatching the job it's now being asked to do."
+  }
+];
+
+const ROUND_MS = 15000;
+const INTEGRITY_STEP = 100 / records.length;
+
+let idx = 0, integrity = 100, streak = 0, answered = false;
+let timerStart = null, timerRAF = null;
+
+function updateStatbar(){
+  document.getElementById('integrityVal').textContent = Math.round(integrity) + '%';
+  const fill = document.getElementById('integrityFill');
+  fill.style.width = Math.max(0, integrity) + '%';
+  fill.style.background = integrity > 60 ? 'var(--nhs-green)' : (integrity > 30 ? 'var(--nhs-yellow)' : 'var(--nhs-red)');
+  document.getElementById('streakVal').textContent = streak;
+  document.getElementById('recordCountVal').textContent = `${Math.min(idx+1, records.length)} / ${records.length}`;
+}
+
+function renderRecord(){
+  const r = records[idx];
+  document.getElementById('recordTag').textContent = r.tag;
+  const box = document.getElementById('recordBox');
+  box.innerHTML = `<div class="record-head">${r.head}</div>` + r.fields.map((f,i)=>
+    `<button class="field" data-i="${i}" onclick="pick(${i})"><span class="lbl">${f.label}</span><span class="val">${f.value}</span></button>`
+  ).join('');
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('feedback').innerHTML = '';
+  document.getElementById('nextBtn').disabled = true;
+  answered = false;
+  updateStatbar();
+  startTimer();
+}
+
+function startTimer(){
+  timerStart = performance.now();
+  const fillEl = document.getElementById('timerFill');
+  const labelEl = document.getElementById('timerLabel');
+  fillEl.className = 'timer-fill';
+  function tick(now){
+    if(answered) return;
+    const elapsed = now - timerStart;
+    const remaining = Math.max(0, ROUND_MS - elapsed);
+    const pct = (remaining / ROUND_MS) * 100;
+    fillEl.style.width = pct + '%';
+    labelEl.textContent = (remaining/1000).toFixed(1) + 's';
+    if(pct < 50 && pct >= 20) fillEl.className = 'timer-fill warn';
+    else if(pct < 20) fillEl.className = 'timer-fill danger';
+    else fillEl.className = 'timer-fill';
+    if(remaining <= 0){
+      handleTimeout();
+      return;
+    }
+    timerRAF = requestAnimationFrame(tick);
+  }
+  timerRAF = requestAnimationFrame(tick);
+}
+
+function stopTimer(){
+  if(timerRAF) cancelAnimationFrame(timerRAF);
+}
+
+function handleTimeout(){
+  if(answered) return;
+  answered = true;
+  stopTimer();
+  const r = records[idx];
+  const buttons = document.querySelectorAll('#recordBox .field');
+  buttons.forEach((b,bi)=>{
+    b.disabled = true;
+    if(r.fields[bi].correct) b.classList.add('correct');
+  });
+  streak = 0;
+  integrity = Math.max(0, integrity - INTEGRITY_STEP);
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback show bad';
+  fb.innerHTML = `<b>Time's up — it slipped through.</b>${r.explain}`;
+  updateStatbar();
+  document.getElementById('nextBtn').disabled = false;
+}
+
+function pick(i){
+  if(answered) return;
+  answered = true;
+  stopTimer();
+  const r = records[idx];
+  const buttons = document.querySelectorAll('#recordBox .field');
+  buttons.forEach((b,bi)=>{
+    b.disabled = true;
+    if(r.fields[bi].correct) b.classList.add('correct');
+    else if (bi === i) b.classList.add('incorrect');
+  });
+  const fb = document.getElementById('feedback');
+  const wasRight = r.fields[i].correct;
+  if(wasRight){
+    streak++;
+  } else {
+    streak = 0;
+    integrity = Math.max(0, integrity - INTEGRITY_STEP);
+  }
+  fb.className = 'feedback show ' + (wasRight ? 'good' : 'bad');
+  fb.innerHTML = `<b>${wasRight ? "Caught it — held the line." : "Not quite — here's what was actually wrong."}</b>${r.explain}`;
+  updateStatbar();
+  document.getElementById('nextBtn').disabled = false;
+}
+
+document.getElementById('nextBtn').addEventListener('click', ()=>{
+  idx++;
+  if(idx >= records.length){
+    document.getElementById('gameCard').classList.add('hidden');
+    document.getElementById('endCard').classList.remove('hidden');
+    const finalPct = Math.round(integrity);
+    document.getElementById('finalScore').textContent = finalPct + '%';
+    const verdict = document.getElementById('verdictBox');
+    let cls, msg;
+    if(finalPct >= 85){ cls='great'; msg='Strong shift. A model trained on what got through would be close to reliable.'; }
+    else if(finalPct >= 50){ cls='ok'; msg='Mixed shift. Enough slipped through that the model would have real blind spots.'; }
+    else { cls='poor'; msg='Rough shift. A model trained on this batch would carry serious, hidden faults.'; }
+    verdict.innerHTML = `<div class="verdict ${cls}">${msg}</div>`;
+  } else {
+    renderRecord();
+  }
+});
+
+function restart(){
+  idx = 0; integrity = 100; streak = 0;
+  document.getElementById('endCard').classList.add('hidden');
+  document.getElementById('gameCard').classList.remove('hidden');
+  renderRecord();
+}
+
+renderRecord();
+</script>
+</body>
+</html>

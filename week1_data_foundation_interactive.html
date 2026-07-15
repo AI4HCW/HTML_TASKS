@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data: The Foundation of AI — A Guide for Healthcare Workers</title>
+<style>
+  :root {
+    --nhs-blue: #005EB8; --nhs-dark-blue: #003087; --nhs-light-blue: #41B6E6;
+    --nhs-green: #009639; --nhs-warm-yellow: #FFB81C; --nhs-red: #DA291C;
+    --nhs-grey: #425563; --nhs-light-grey: #F0F4F5;
+    --text-dark: #212B32; --text-mid: #4C6272; --white: #ffffff;
+    --border: #D8DDE0; --radius: 8px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.10); --shadow-hover: 0 4px 16px rgba(0,94,184,0.18);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Frutiger', Arial, Helvetica, sans-serif; background: #f5f7fa; color: var(--text-dark); line-height: 1.6; min-height: 100vh; }
+  .hero { background: linear-gradient(135deg, var(--nhs-dark-blue) 0%, var(--nhs-blue) 60%, var(--nhs-light-blue) 100%); color: white; padding: 48px 24px 40px; text-align: center; position: relative; overflow: hidden; }
+  .hero-badge { display: inline-block; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 4px 16px; font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 16px; position: relative; }
+  .hero h1 { font-size: clamp(26px, 5vw, 42px); font-weight: 700; margin-bottom: 12px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); position: relative; }
+  .hero p { font-size: 17px; opacity: 0.9; max-width: 640px; margin: 0 auto; position: relative; }
+  .progress-bar-wrap { background: rgba(255,255,255,0.2); border-radius: 20px; height: 6px; max-width: 300px; margin: 24px auto 0; overflow: hidden; position: relative; }
+  .progress-bar { height: 100%; background: var(--nhs-warm-yellow); border-radius: 20px; transition: width 0.5s ease; width: 0%; }
+  .progress-label { font-size: 13px; opacity: 0.85; margin-top: 6px; position: relative; }
+  .tab-nav { display: flex; overflow-x: auto; background: white; border-bottom: 2px solid var(--border); padding: 0 16px; gap: 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 6px rgba(0,0,0,0.07); }
+  .tab-btn { padding: 14px 18px; border: none; background: none; font-size: 14px; font-weight: 600; color: var(--text-mid); cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+  .tab-btn:hover { color: var(--nhs-blue); }
+  .tab-btn.active { color: var(--nhs-blue); border-bottom-color: var(--nhs-blue); }
+  .tab-btn .tab-num { width: 22px; height: 22px; border-radius: 50%; background: var(--nhs-light-grey); color: var(--text-mid); font-size: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .tab-btn.active .tab-num { background: var(--nhs-blue); color: white; }
+  .tab-btn.done .tab-num { background: var(--nhs-green); color: white; }
+  .tab-btn.done .tab-num::after { content: '✓'; }
+  .main { max-width: 880px; margin: 0 auto; padding: 32px 16px 60px; }
+  .section { display: none; animation: fadeIn 0.3s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px; margin-bottom: 20px; }
+  .card-title { font-size: 22px; font-weight: 700; color: var(--nhs-dark-blue); margin-bottom: 12px; }
+  .card p { color: var(--text-mid); margin-bottom: 12px; }
+  .card p:last-child { margin-bottom: 0; }
+  .eyebrow { font-size:12px; font-weight:700; color:var(--nhs-blue); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; }
+  .info-box { background: #E8F4FD; border-left: 4px solid var(--nhs-light-blue); border-radius: 0 var(--radius) var(--radius) 0; padding: 16px 20px; margin: 16px 0; font-size: 15px; color: var(--text-dark); }
+  .warning-box { background: #FFF9EC; border-left: 4px solid var(--nhs-warm-yellow); border-radius: 0 var(--radius) var(--radius) 0; padding: 16px 20px; margin: 16px 0; font-size: 15px; }
+  .taxonomy-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 20px 0; }
+  .taxon-card { border-radius: var(--radius); padding: 20px; cursor: pointer; border: 2px solid transparent; transition: all 0.25s; position: relative; overflow: hidden; }
+  .taxon-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; border-radius: var(--radius) var(--radius) 0 0; }
+  .taxon-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+  .taxon-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .taxon-card p { font-size: 13px; margin: 0; }
+  .taxon-card .icon { font-size: 26px; margin-bottom: 10px; }
+  .taxon-card .tap-hint { font-size:11px; font-weight:700; opacity:0.7; margin-top:10px; text-transform:uppercase; letter-spacing:0.04em; }
+  .type-struct { background:#EFF6FF; color:#1D4ED8; } .type-struct::before { background:#1D4ED8; }
+  .type-unstruct { background:#FFF7ED; color:#C2410C; } .type-unstruct::before { background:#C2410C; }
+  .type-semi { background:#F0FDF4; color:#15803D; } .type-semi::before { background:#15803D; }
+  .type-missing { background:#F8FAFC; color:#475569; } .type-missing::before { background:#475569; }
+  .type-inaccurate { background:#FFF5F5; color:#B91C1C; } .type-inaccurate::before { background:#B91C1C; }
+  .type-inappropriate { background:#FDF4FF; color:#7E22CE; } .type-inappropriate::before { background:#7E22CE; }
+  .type-bias { background:#FFFBEB; color:#B45309; } .type-bias::before { background:#B45309; }
+  .type-gdpr { background:#EFF6FF; color:#1D4ED8; } .type-gdpr::before { background:#1D4ED8; }
+  .type-caldicott { background:#F0FDF4; color:#15803D; } .type-caldicott::before { background:#15803D; }
+  .type-goldacre { background:#FDF4FF; color:#7E22CE; } .type-goldacre::before { background:#7E22CE; }
+  .detail-panel { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px 28px; margin-top: 4px; border-top: 4px solid var(--nhs-blue); display: none; }
+  .detail-panel.open { display: block; animation: fadeIn 0.3s ease; }
+  .detail-panel h3 { font-size: 19px; font-weight: 700; color: var(--nhs-dark-blue); margin-bottom: 10px; }
+  .detail-panel p { color: var(--text-mid); margin-bottom: 10px; font-size:14.5px; }
+  .example-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .chip { background: var(--nhs-light-grey); border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: var(--nhs-dark-blue); }
+  .chip.nhs { background: #E6F0FA; color: var(--nhs-blue); }
+  .chip .chip-tool { font-weight:800; }
+  .detail-panel .action-link { display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:700; color:var(--nhs-blue); text-decoration:none; background:#E6F0FA; border:1px solid #cfe0f3; border-radius:20px; padding:7px 15px; margin:4px 6px 4px 0; transition:all .15s; }
+  .detail-panel .action-link:hover { background:var(--nhs-blue); color:#fff; }
+  .detail-panel .action-link.game { background:#FFF4E5; border-color:#ffd699; color:#9a5b00; }
+  .detail-panel .action-link.game:hover { background:var(--nhs-warm-yellow); color:#3a2a00; }
+  .learn-block { margin-top:16px; padding-top:14px; border-top:1px dashed var(--border); }
+  .learn-head { font-size:12px; font-weight:700; color:var(--text-mid); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; }
+  .resources-note { font-size:12.5px; color:var(--text-mid); font-style:italic; margin-bottom:10px; }
+  .btn { padding: 12px 28px; border-radius: var(--radius); font-size: 15px; font-weight: 700; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+  .btn-primary { background: var(--nhs-blue); color: white; }
+  .btn-primary:hover { background: var(--nhs-dark-blue); }
+  .btn-secondary { background: white; color: var(--nhs-blue); border-color: var(--nhs-blue); }
+  .btn-secondary:hover { background: #E6F0FA; }
+  .nav-row { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; gap: 12px; }
+  .key-takeaways { text-align: left; background: white; border-radius: var(--radius); padding: 24px 28px; box-shadow: var(--shadow); }
+  .key-takeaways h3 { font-size: 16px; font-weight: 700; color: var(--nhs-dark-blue); margin-bottom: 14px; }
+  .takeaway { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
+  .takeaway-icon { font-size: 20px; flex-shrink: 0; }
+  .takeaway-text { font-size: 14px; color: var(--text-mid); }
+  @media (max-width: 600px) { .taxonomy-grid { grid-template-columns: 1fr 1fr; } .nav-row { flex-direction: column-reverse; } .btn { width: 100%; justify-content: center; } }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-badge">Week 1 · The Landscape · Step 1.6</div>
+  <h1>Data: The Foundation of AI</h1>
+  <p>If AI is the engine, data is the fuel — what it's made of, where it comes from, and the rules that govern it</p>
+  <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+  <p class="progress-label" id="progressLabel">0 of 4 sections complete</p>
+</div>
+
+<nav class="tab-nav" role="tablist">
+  <button class="tab-btn active" onclick="goTo(0)" id="tab0"><span class="tab-num" id="tnum0">1</span> The Big Idea</button>
+  <button class="tab-btn" onclick="goTo(1)" id="tab1"><span class="tab-num" id="tnum1">2</span> Types of Data</button>
+  <button class="tab-btn" onclick="goTo(2)" id="tab2"><span class="tab-num" id="tnum2">3</span> When Data Goes Wrong</button>
+  <button class="tab-btn" onclick="goTo(3)" id="tab3"><span class="tab-num" id="tnum3">4</span> Governance</button>
+</nav>
+
+<main class="main">
+
+<!-- SECTION 1 — BIG IDEA -->
+<section class="section active" id="sec0">
+  <div class="card">
+    <div class="eyebrow">Start here</div>
+    <div class="card-title">If AI is the engine, data is the fuel</div>
+    <p>Every AI tool in this course was built the same way underneath: by learning patterns from data. Not from a textbook, and not from years of clinical training — from thousands, sometimes millions, of examples fed into it during development.</p>
+    <div class="info-box">💡 <strong>The core idea:</strong> an AI model doesn't know anything you haven't shown it. If the data it learned from was incomplete, wrong, or unrepresentative, the model inherits those gaps — and it won't know what it doesn't know.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">What this step covers</div>
+    <p>Three things you'll build a working understanding of, each with its own hands-on activity:</p>
+    <p>1. <strong>The types of health data</strong> — structured, unstructured and semi-structured — and why most AI tools are trained overwhelmingly on the easiest kind.</p>
+    <p>2. <strong>When data goes wrong</strong> — missing, inaccurate and inappropriate data, and how each one quietly misleads a model trained on it.</p>
+    <p>3. <strong>How the UK governs health data</strong> — UK GDPR, the Caldicott Principles and the Goldacre Review — and why that governance exists.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Three things to keep in mind</div>
+    <div class="warning-box"><strong>🚫 "Garbage in, garbage out" is not a throwaway line.</strong> It's one of the biggest reasons AI tools that look impressive in a lab underperform, or actively mislead, once they meet real patients.</div>
+    <div class="warning-box"><strong>🚫 Most AI tools train on structured data.</strong> Free text carries huge clinical nuance, but converting it to something a model can use always loses detail.</div>
+    <div class="warning-box"><strong>🚫 Governance isn't bureaucracy for its own sake.</strong> Data this sensitive, powering tools this consequential, has to be handled properly — that's what UK GDPR, Caldicott and the Goldacre Review are for.</div>
+  </div>
+
+  <div class="nav-row"><div></div><button class="btn btn-primary" onclick="goTo(1)">See the types of data →</button></div>
+</section>
+
+<!-- SECTION 2 — TYPES OF DATA -->
+<section class="section" id="sec1">
+  <div class="card">
+    <div class="card-title">The three types of health data</div>
+    <p><strong>Click any card</strong> for a plain-English explanation, examples, a hands-on sorting activity, and further resources.</p>
+  </div>
+
+  <div class="taxonomy-grid" id="typeGrid">
+    <div class="taxon-card type-struct" onclick="showDetail('type','struct')"><div class="icon">🗂️</div><h3>Structured</h3><p>Sits neatly in defined fields.</p><div class="tap-hint">Tap to explore</div></div>
+    <div class="taxon-card type-unstruct" onclick="showDetail('type','unstruct')"><div class="icon">📝</div><h3>Unstructured</h3><p>Free text, written for a human reader.</p><div class="tap-hint">Tap to explore</div></div>
+    <div class="taxon-card type-semi" onclick="showDetail('type','semi')"><div class="icon">🧩</div><h3>Semi-structured</h3><p>A mix of both.</p><div class="tap-hint">Tap to explore</div></div>
+  </div>
+
+  <div class="detail-panel" id="panel-type"></div>
+
+  <div class="nav-row">
+    <button class="btn btn-secondary" onclick="goTo(0)">← The Big Idea</button>
+    <button class="btn btn-primary" onclick="goTo(2)">See when data goes wrong →</button>
+  </div>
+</section>
+
+<!-- SECTION 3 — DATA PROBLEMS -->
+<section class="section" id="sec2">
+  <div class="card">
+    <div class="card-title">When data goes wrong</div>
+    <p>Four ways flawed data quietly corrupts an AI tool. <strong>Click any card</strong> to see real-looking examples, a hands-on activity, and further resources.</p>
+  </div>
+
+  <div class="taxonomy-grid" id="problemGrid">
+    <div class="taxon-card type-missing" onclick="showDetail('problem','missing')"><div class="icon">❓</div><h3>Missing data</h3><p>Fields left blank or never recorded.</p><div class="tap-hint">Tap to explore</div></div>
+    <div class="taxon-card type-inaccurate" onclick="showDetail('problem','inaccurate')"><div class="icon">⚠️</div><h3>Inaccurate data</h3><p>Wrong, stale or mislabelled values.</p><div class="tap-hint">Tap to explore</div></div>
+    <div class="taxon-card type-bias" onclick="showDetail('problem','bias')"><div class="icon">🎯</div><h3>Bias</h3><p>Data that systematically under-serves some groups.</p><div class="tap-hint">Tap to explore</div></div>
+    <div class="taxon-card type-inappropriate" onclick="showDetail('problem','inappropriate')"><div class="icon">🚧</div><h3>Inappropriate data</h3><p>Collected for one purpose, used for another.</p><div class="tap-hint">Tap to explore</div></div>
+  </div>
+
+  <div class="detail-panel" id="panel-problem"></div>
+
+  <div class="nav-row">
+    <button class="btn btn-secondary" onclick="goTo(1)">← Types of Data</button>
+    <button class="btn btn-primary" onclick="goTo(3)">See the governance rules →</button>
+  </div>
+</section>
+
+<!-- SECTION 4 — GOVERNANCE -->
+<section class="section" id="sec3">
+  <div class="card">
+    <div class="card-title">How the UK governs health data</div>
+    <p>Three pillars that shape how patient data can be used to build AI. <strong>Click any card</strong> for a plain-English explanation, a hands-on scenario activity, and further resources.</p>
+  </div>
+
+  <div class="taxonomy-grid" id="govGrid">
+    <div class="taxon-card type-gdpr" onclick="showDetail('gov','gdpr')"><div class="icon">⚖️</div><h3>UK GDPR</h3><p>The legal baseline for personal data.</p><div class="tap-hint">Tap to explore</div></div>
+    <div class="taxon-card type-caldicott" onclick="showDetail('gov','caldicott')"><div class="icon">🛡️</div><h3>Caldicott Principles</h3><p>How confidential patient information is used and shared.</p><div class="tap-hint">Tap to explore</div></div>
+    <div class="taxon-card type-goldacre" onclick="showDetail('gov','goldacre')"><div class="icon">🔐</div><h3>The Goldacre Review</h3><p>Why secure data environments matter.</p><div class="tap-hint">Tap to explore</div></div>
+  </div>
+
+  <div class="detail-panel" id="panel-gov"></div>
+
+  <div class="card" style="margin-top:24px;">
+    <div class="key-takeaways">
+      <h3>Key takeaways</h3>
+      <div class="takeaway"><div class="takeaway-icon">🗂️</div><div class="takeaway-text"><strong>Data comes in different forms.</strong> Structured, unstructured and semi-structured data all need different handling — and most AI tools lean heavily on the structured kind.</div></div>
+      <div class="takeaway"><div class="takeaway-icon">⚠️</div><div class="takeaway-text"><strong>Flawed data produces flawed AI.</strong> Missing, inaccurate and inappropriate data don't just create noise — they become the bias and blind spots covered in Week 2.</div></div>
+      <div class="takeaway"><div class="takeaway-icon">⚖️</div><div class="takeaway-text"><strong>Governance protects patients and enables trust.</strong> UK GDPR, the Caldicott Principles and the Goldacre Review exist because health data is uniquely sensitive and uniquely powerful.</div></div>
+      <div class="takeaway"><div class="takeaway-icon">🎯</div><div class="takeaway-text"><strong>Try all three activities</strong> if you haven't already: Sorting Desk, Data Intake Desk and Governance Desk, linked in each section above.</div></div>
+    </div>
+  </div>
+
+  <div class="nav-row"><button class="btn btn-secondary" onclick="goTo(2)">← When Data Goes Wrong</button><div></div></div>
+</section>
+
+</main>
+
+<script>
+const NUM_SECTIONS = 4;
+let currentSection = 0;
+const sectionDone = [false, false, false, false];
+
+function goTo(idx) {
+  document.getElementById('sec' + currentSection).classList.remove('active');
+  document.getElementById('tab' + currentSection).classList.remove('active');
+  if (!sectionDone[currentSection]) { sectionDone[currentSection] = true; updateTab(currentSection); }
+  currentSection = idx;
+  document.getElementById('sec' + idx).classList.add('active');
+  document.getElementById('tab' + idx).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  updateProgress();
+}
+function updateTab(idx) { document.getElementById('tab' + idx).classList.add('done'); document.getElementById('tnum' + idx).textContent = ''; }
+function updateProgress() {
+  const done = sectionDone.filter(Boolean).length;
+  document.getElementById('progressBar').style.width = (done / NUM_SECTIONS * 100) + '%';
+  document.getElementById('progressLabel').textContent = done + ' of ' + NUM_SECTIONS + ' sections complete';
+}
+
+// ── Detail content, grouped by grid ──────────────────────────────
+const details = {
+  type: {
+    struct: {
+      title: '🗂️ Structured data',
+      body: `Sits neatly in defined fields a computer can process directly — no interpretation needed. It's the easiest form of data to feed into an AI model, which is exactly why most tools lean on it heavily.<br><br><strong>Ask:</strong> is the field actually filled in consistently across every record, or does "structured" just mean "supposed to be structured"?`,
+      game: `<a class="action-link game" href="sorting-desk-game.html" target="_blank" rel="noopener">Play: Sorting Desk — classify data types under time pressure →</a>`,
+      resources: [
+        ['Structured vs. Unstructured Data — IBM', 'https://www.ibm.com/think/topics/structured-vs-unstructured-data'],
+        ['Google Skills — Foundations of Data Science', 'https://www.skills.google/paths/2417']
+      ],
+      chips: [['Vital signs','blood pressure, heart rate'],['Blood results','lab values'],['ICD codes','diagnosis coding'],['NEWS2 score','early warning score']]
+    },
+    unstruct: {
+      title: '📝 Unstructured data',
+      body: `Free text, written for a human reader — a clinical note, a letter, a report. It carries huge amounts of clinical nuance, but a computer can't easily read it without extra processing (natural language processing), and detail is always lost in that conversion.<br><br><strong>Ask:</strong> what nuance in the original text might not have survived being turned into something a model can use?`,
+      game: `<a class="action-link game" href="sorting-desk-game.html" target="_blank" rel="noopener">Play: Sorting Desk — classify data types under time pressure →</a>`,
+      resources: [['Unstructured Data — Examples, Applications & Use Cases — IBM', 'https://www.ibm.com/think/topics/unstructured-data-examples-use-cases']],
+      chips: [['Clinical notes','free-text entries'],['Radiology reports','narrative impressions'],['Dictations','transcribed speech'],['Patient letters','referrals, correspondence']]
+    },
+    semi: {
+      title: '🧩 Semi-structured data',
+      body: `A mix of both — not rigidly structured, but not pure free text either. Metadata or tags carry some structure alongside content that isn't structured itself.<br><br><strong>Ask:</strong> which parts of this data are actually structured, and which parts are hiding unstructured content inside a structured-looking wrapper?`,
+      game: `<a class="action-link game" href="sorting-desk-game.html" target="_blank" rel="noopener">Play: Sorting Desk — classify data types under time pressure →</a>`,
+      resources: [['What is Semi-Structured Data? — Wikipedia overview', 'https://en.wikipedia.org/wiki/Semi-structured_data']],
+      chips: [['DICOM imaging','scans with embedded metadata'],['EHR exports','coded fields + free-text columns']]
+    }
+  },
+  problem: {
+    missing: {
+      title: '❓ Missing data',
+      body: `Fields left blank, or never recorded in the first place. A blank field isn't the same as a confirmed "no" — but many systems store them identically, so a model can learn the wrong lesson from an absence of information.`,
+      game: `<a class="action-link game" href="data-foundations-game.html" target="_blank" rel="noopener">Play: Data Intake Desk — spot the flawed record before it slips through →</a>`,
+      resources: [['Kaggle — Data Cleaning (handling missing values)', 'https://www.kaggle.com/learn/data-cleaning']],
+      chips: [['Blank allergy field','not the same as "no known allergies"'],['Unrecorded observations','gaps in a busy shift'],['Incomplete history','fields never asked about']]
+    },
+    inaccurate: {
+      title: '⚠️ Inaccurate data',
+      body: `Values that are wrong, out of date, or mislabelled. Inconsistent units (mg vs mcg), stale medication lists, or a discharge diagnosis that doesn't match the clinical notes — if the label itself is wrong, the model learns the wrong lesson entirely.`,
+      game: `<a class="action-link game" href="data-foundations-game.html" target="_blank" rel="noopener">Play: Data Intake Desk — spot the flawed record before it slips through →</a>`,
+      resources: [['Kaggle — Data Cleaning (inconsistent entries & dates)', 'https://www.kaggle.com/learn/data-cleaning']],
+      chips: [['Inconsistent units','0.5 mg vs 500 mcg'],['Stale entries','medication list years out of date'],['Ground-truth errors','discharge code doesn\'t match the notes']]
+    },
+    bias: {
+      title: '🎯 Bias',
+      body: `Data that systematically under-represents or under-serves some groups — not a random error, but a consistent pattern baked in by who was recorded, how, and under what historical conditions. An AI model trained on biased data doesn't just make occasional mistakes; it performs reliably worse for whoever the data under-represents. This is one of the most active areas of UK clinical AI research right now.<br><br><strong>Ask:</strong> who is over-represented in this data, who is under-represented, and why?`,
+      game: `<a class="action-link game" href="data-foundations-game.html" target="_blank" rel="noopener">Play: Data Intake Desk — spot the flawed record before it slips through →</a>`,
+      resources: [
+        ['Obermeyer et al. — "Dissecting racial bias in an algorithm used to manage the health of populations", Science, 2019', 'https://www.science.org/'],
+        ['STANDING Together consensus recommendations — tackling bias in health datasets', 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11668905/']
+      ],
+      chips: [['Unrepresentative sample','94% one skin type, trained for everyone'],['Historic under-diagnosis','encoded as "ground truth" for a whole group'],['Proxy variables','using cost as a stand-in for health need underestimates need where access has historically been unequal']]
+    },
+    inappropriate: {
+      title: '🚧 Inappropriate data',
+      body: `Data collected for one purpose and repurposed for another it was never designed for. Billing and coding records are built for billing and coding — using them to train a diagnostic tool means the data is missing the granularity and clinical accuracy that job actually needs.<br><br><strong>Ask:</strong> what was this data originally collected for, and does that original purpose still fit the job it's being asked to do now?`,
+      game: `<a class="action-link game" href="data-foundations-game.html" target="_blank" rel="noopener">Play: Data Intake Desk — spot the flawed record before it slips through →</a>`,
+      resources: [['IBM SkillsBuild — Data Fundamentals', 'https://skillsbuild.org/college-students/course-catalog/data-fundamentals']],
+      chips: [['Repurposed data','billing records used to train a diagnostic model'],['Context mismatch','data collected for research, used operationally, or vice versa']]
+    }
+  },
+  gov: {
+    gdpr: {
+      title: '⚖️ UK GDPR',
+      body: `The legal baseline for handling personal data, including health data. It sets out a lawful basis for processing data, requires a Data Protection Impact Assessment (DPIA) for high-risk projects like most new health AI tools, and requires breaches to be reported to the ICO within 72 hours.`,
+      game: `<a class="action-link game" href="governance-desk-game.html" target="_blank" rel="noopener">Play: Governance Desk — work through real workplace judgement calls →</a>`,
+      resources: [['UK GDPR guidance and resources — ICO', 'https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/']],
+      chips: [['DPIA','required before high-risk AI projects'],['72-hour rule','breach reporting to the ICO'],['Lawful basis','required before processing personal data']]
+    },
+    caldicott: {
+      title: '🛡️ Caldicott Principles',
+      body: `Govern how confidential patient information is used and shared. Every NHS and social care organisation has a named Caldicott Guardian — a senior figure responsible for protecting patient information and enabling appropriate information sharing.`,
+      game: `<a class="action-link game" href="governance-desk-game.html" target="_blank" rel="noopener">Play: Governance Desk — work through real workplace judgement calls →</a>`,
+      resources: [
+        ['The Caldicott Principles — GOV.UK', 'https://www.gov.uk/government/publications/the-caldicott-principles'],
+        ['National Data Guardian — GOV.UK', 'https://www.gov.uk/government/organisations/national-data-guardian']
+      ],
+      chips: [['Caldicott Guardian','named role in every NHS organisation'],['Duty of confidentiality','common law principle predating GDPR'],['National Data Opt-out','patients can opt out of research/planning use']]
+    },
+    goldacre: {
+      title: '🔐 The Goldacre Review',
+      body: `An independent 2022 government review — "Better, Broader, Safer: Using Health Data for Research and Analysis" — which recommended moving toward secure data environments, so approved analysts can work with health data without raw patient data ever leaving NHS control.`,
+      game: `<a class="action-link game" href="governance-desk-game.html" target="_blank" rel="noopener">Play: Governance Desk — work through real workplace judgement calls →</a>`,
+      resources: [
+        ['The Goldacre Review — GOV.UK', 'https://www.gov.uk/government/publications/better-broader-safer-using-health-data-for-research-and-analysis'],
+        ['OpenSAFELY — a secure data environment in practice', 'https://www.opensafely.org/']
+      ],
+      chips: [['Secure data environments','data stays put, code goes to it'],['OpenSAFELY','a working example, built on GP data'],['Public trust','the review\'s central goal']]
+    }
+  }
+};
+
+const gridNames = { type: 'typeGrid', problem: 'problemGrid', gov: 'govGrid' };
+const openPanels = { type: null, problem: null, gov: null };
+
+function chipHTML(c) { return `<span class="chip nhs"><span class="chip-tool">${c[0]}</span> · ${c[1]}</span>`; }
+
+function showDetail(group, key) {
+  const panel = document.getElementById('panel-' + group);
+  const d = details[group][key];
+  if (openPanels[group] === key) { panel.classList.remove('open'); openPanels[group] = null; return; }
+  openPanels[group] = key;
+  const gameHTML = d.game ? `<div class="learn-block"><div class="learn-head">🎮 Learn by doing</div>${d.game}</div>` : '';
+  const resourcesHTML = d.resources ? `<div class="learn-block"><div class="learn-head">📚 Further resources — optional</div><p class="resources-note">Just for interest, if you'd like a deeper explanation. These are external sites and are <strong>not required</strong> for the course.</p>${d.resources.map(r=>`<a class="action-link" href="${r[1]}" target="_blank" rel="noopener">${r[0]} ↗</a>`).join('')}</div>` : '';
+  panel.innerHTML = `<h3>${d.title}</h3><p>${d.body}</p>${gameHTML}<div class="learn-block"><div class="learn-head">Examples</div><div class="example-chips">${d.chips.map(chipHTML).join('')}</div></div>${resourcesHTML}`;
+  panel.classList.add('open');
+  setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'nearest'}),100);
+}
+
+updateProgress();
+</script>
+</body>
+</html>
