@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trust, Check or Escalate? AI Already in Your Hospital</title>
+<style>
+  :root {
+    --nhs-blue: #005EB8;
+    --nhs-dark-blue: #003087;
+    --nhs-light-blue: #41B6E6;
+    --nhs-green: #009639;
+    --nhs-yellow: #FFB81C;
+    --nhs-red: #DA291C;
+    --nhs-grey: #425563;
+    --bg: #F4F7FA;
+    --panel: #FFFFFF;
+    --text: #212B32;
+    --muted: #4C6272;
+    --border: #D8DDE0;
+    --safe-bg: #F0FDF4;
+    --safe-text: #14532D;
+    --partial-bg: #FFF7E6;
+    --partial-text: #7A4D00;
+    --risk-bg: #FFF1F1;
+    --risk-text: #7A1D16;
+    --radius: 8px;
+    --shadow: 0 2px 10px rgba(0, 48, 135, 0.10);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+  button, input { font: inherit; }
+  .hero {
+    background: linear-gradient(135deg, var(--nhs-dark-blue) 0%, var(--nhs-blue) 68%, var(--nhs-light-blue) 100%);
+    color: #fff;
+    padding: 34px 18px 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 34px 34px;
+    opacity: 0.65;
+  }
+  .hero > * { position: relative; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.14);
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  h1 {
+    margin: 12px auto 8px;
+    max-width: 900px;
+    font-size: clamp(28px, 5vw, 44px);
+    line-height: 1.08;
+  }
+  .hero p {
+    margin: 0 auto;
+    max-width: 720px;
+    color: rgba(255,255,255,0.92);
+    font-size: 17px;
+  }
+  .top-status {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(255,255,255,0.96);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .top-status-inner {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 12px 16px;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 14px;
+    align-items: center;
+  }
+  .progress-shell {
+    min-width: 0;
+  }
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .progress-track {
+    height: 8px;
+    border-radius: 999px;
+    background: #E7EDF3;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--nhs-blue);
+    border-radius: 999px;
+    transition: width 0.35s ease;
+  }
+  .timer {
+    min-width: 82px;
+    border: 2px solid var(--nhs-blue);
+    color: var(--nhs-dark-blue);
+    border-radius: 999px;
+    padding: 7px 12px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 800;
+    background: #fff;
+  }
+  .timer.warning { border-color: var(--nhs-yellow); color: #7A4D00; background: #FFF8E8; }
+  .timer.danger { border-color: var(--nhs-red); color: var(--risk-text); background: var(--risk-bg); animation: pulse 0.8s infinite; }
+  .score-chip {
+    min-width: 86px;
+    border-radius: 999px;
+    padding: 8px 12px;
+    background: #E6F0FA;
+    color: var(--nhs-dark-blue);
+    text-align: center;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  main {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 26px 16px 56px;
+  }
+  main:focus {
+    outline: none;
+  }
+  .card {
+    background: var(--panel);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid #E3E8EE;
+    padding: 24px;
+    margin-bottom: 18px;
+  }
+  .card-title {
+    margin: 0 0 10px;
+    color: var(--nhs-dark-blue);
+    font-size: 23px;
+    line-height: 1.2;
+  }
+  .eyebrow {
+    color: var(--nhs-blue);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .intro-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 18px 0 4px;
+  }
+  .mini-panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    background: #FAFCFE;
+  }
+  .mini-panel strong {
+    display: block;
+    color: var(--nhs-dark-blue);
+    margin-bottom: 4px;
+  }
+  .name-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(240px, 0.85fr);
+    gap: 14px;
+    margin-top: 18px;
+    align-items: stretch;
+  }
+  .name-field {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: #FAFCFE;
+    padding: 16px;
+  }
+  .name-field label {
+    display: block;
+    color: var(--nhs-dark-blue);
+    font-weight: 900;
+    margin-bottom: 8px;
+  }
+  .name-input {
+    width: 100%;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    color: var(--text);
+    background: #fff;
+    min-height: 48px;
+  }
+  .name-input:focus {
+    outline: 3px solid rgba(255,184,28,0.55);
+    border-color: var(--nhs-blue);
+  }
+  .identity-card {
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, #E6F0FA, #FFF8E8);
+    border: 1px solid #CFE0F3;
+    padding: 16px;
+  }
+  .identity-card strong {
+    color: var(--nhs-dark-blue);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .question-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
+    gap: 18px;
+    align-items: start;
+  }
+  .scenario-card {
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+  }
+  .scene-header {
+    background: linear-gradient(135deg, var(--nhs-dark-blue), var(--nhs-blue));
+    color: #fff;
+    padding: 24px;
+  }
+  .scene-header .eyebrow {
+    color: rgba(255,255,255,0.86);
+    margin-bottom: 8px;
+  }
+  .scene-title {
+    margin: 0;
+    font-size: clamp(26px, 4vw, 38px);
+    line-height: 1.08;
+    color: #fff;
+  }
+  .scene-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .scene-tag {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.28);
+    color: #fff;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .scene-body {
+    padding: 24px;
+    background:
+      linear-gradient(180deg, rgba(232,244,253,0.72), rgba(255,255,255,0) 150px),
+      #fff;
+  }
+  .briefing-label {
+    color: var(--nhs-blue);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .scenario-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0 16px;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: #E6F0FA;
+    color: var(--nhs-dark-blue);
+    padding: 5px 11px;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .scenario-text {
+    font-size: clamp(19px, 2.4vw, 24px);
+    line-height: 1.48;
+    color: var(--text);
+    margin: 0 0 20px;
+    max-width: 760px;
+  }
+  .briefing-card {
+    border: 1px solid #CFE0F3;
+    border-left: 6px solid var(--nhs-blue);
+    border-radius: var(--radius);
+    background: #F8FBFF;
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+  .briefing-card h3 {
+    margin: 0 0 8px;
+    color: var(--nhs-dark-blue);
+    font-size: 18px;
+  }
+  .clue-grid {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .clue-card {
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    gap: 10px;
+    align-items: start;
+    border: 1px solid var(--border);
+    background: #fff;
+    border-radius: var(--radius);
+    padding: 12px;
+  }
+  .clue-index {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: #E6F0FA;
+    color: var(--nhs-dark-blue);
+    font-weight: 900;
+    font-size: 13px;
+  }
+  .safety-lens {
+    border-radius: var(--radius);
+    border: 1px solid #F4D27C;
+    background: #FFF9EC;
+    color: #4A3300;
+    padding: 14px 16px;
+    margin-top: 18px;
+  }
+  .safety-lens strong {
+    color: #6A4500;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .clue-list {
+    margin: 0;
+    padding-left: 20px;
+    color: var(--muted);
+  }
+  .clue-list li { margin: 7px 0; }
+  .decision-panel {
+    border-top: 4px solid var(--nhs-blue);
+    align-self: start;
+  }
+  .options {
+    display: grid;
+    gap: 10px;
+  }
+  .option-btn {
+    width: 100%;
+    border: 2px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    border-radius: var(--radius);
+    padding: 14px 14px;
+    cursor: pointer;
+    text-align: left;
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    gap: 10px;
+    align-items: center;
+    transition: border-color 0.2s, background 0.2s, transform 0.2s;
+  }
+  .option-btn:hover:not(:disabled), .option-btn.selected {
+    border-color: var(--nhs-light-blue);
+    background: #E8F4FD;
+  }
+  .option-btn:focus-visible {
+    outline: 3px solid var(--nhs-yellow);
+    outline-offset: 2px;
+  }
+  .option-btn[disabled] {
+    cursor: default;
+    opacity: 0.72;
+  }
+  .option-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-weight: 900;
+    color: #fff;
+  }
+  .trust .option-icon { background: var(--nhs-green); }
+  .check .option-icon { background: var(--nhs-yellow); color: #3A2900; }
+  .escalate .option-icon { background: var(--nhs-red); }
+  .option-label {
+    display: block;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--nhs-dark-blue);
+  }
+  .submit-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-top: 14px;
+  }
+  .hint-text {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .btn {
+    border: 2px solid transparent;
+    border-radius: var(--radius);
+    padding: 11px 18px;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    text-decoration: none;
+  }
+  .btn-primary {
+    background: var(--nhs-blue);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--nhs-dark-blue); }
+  .btn-secondary {
+    background: #fff;
+    color: var(--nhs-blue);
+    border-color: var(--nhs-blue);
+  }
+  .btn-secondary:hover { background: #E6F0FA; }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .feedback-hero {
+    border-top: 5px solid var(--nhs-blue);
+  }
+  .feedback-hero.safe { border-top-color: var(--nhs-green); }
+  .feedback-hero.partial { border-top-color: var(--nhs-yellow); }
+  .feedback-hero.risky { border-top-color: var(--nhs-red); }
+  .verdict-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .rating {
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-weight: 900;
+    font-size: 13px;
+  }
+  .rating.safe { background: var(--safe-bg); color: var(--safe-text); }
+  .rating.partial { background: var(--partial-bg); color: var(--partial-text); }
+  .rating.risky { background: var(--risk-bg); color: var(--risk-text); }
+  .points {
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--nhs-dark-blue);
+  }
+  .feedback-block {
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-top: 12px;
+    border-left: 5px solid var(--nhs-blue);
+    background: #F8FAFC;
+  }
+  .feedback-block strong {
+    display: block;
+    color: var(--nhs-dark-blue);
+    margin-bottom: 3px;
+  }
+  .feedback-block.safe { border-left-color: var(--nhs-green); background: var(--safe-bg); color: var(--safe-text); }
+  .feedback-block.partial { border-left-color: var(--nhs-yellow); background: var(--partial-bg); color: var(--partial-text); }
+  .feedback-block.risky { border-left-color: var(--nhs-red); background: var(--risk-bg); color: var(--risk-text); }
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .metric {
+    background: #F8FAFC;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .metric-label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .metric-value {
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--nhs-dark-blue);
+    line-height: 1.15;
+    margin-top: 4px;
+  }
+  .answer-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 14px;
+    font-size: 14px;
+  }
+  .answer-table th, .answer-table td {
+    border-bottom: 1px solid var(--border);
+    padding: 10px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  .answer-table th {
+    color: var(--nhs-dark-blue);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-scroll .answer-table,
+  .table-scroll .leaderboard-table {
+    min-width: 680px;
+  }
+  .leaderboard-card {
+    border-top: 5px solid var(--nhs-yellow);
+  }
+  .leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 14px;
+  }
+  .leaderboard-table th,
+  .leaderboard-table td {
+    border-bottom: 1px solid var(--border);
+    padding: 11px 8px;
+    text-align: left;
+    vertical-align: middle;
+  }
+  .leaderboard-table th {
+    color: var(--nhs-dark-blue);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .leaderboard-table tr.current-player {
+    background: #E8F4FD;
+  }
+  .leaderboard-table tr.live-row .rank-badge,
+  .leaderboard-table tr.current-player .rank-badge {
+    background: var(--nhs-green);
+  }
+  .leaderboard-table tr.benchmark-row {
+    background: #FFF9E6;
+  }
+  .leaderboard-table tr.benchmark-row .rank-badge {
+    background: var(--nhs-yellow);
+    color: #3A2900;
+  }
+  .leaderboard-tag {
+    display: inline-flex;
+    margin-left: 6px;
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+  }
+  .leaderboard-tag.live {
+    background: var(--safe-bg);
+    color: var(--safe-text);
+  }
+  .leaderboard-tag.target {
+    background: var(--partial-bg);
+    color: var(--partial-text);
+  }
+  .rank-badge {
+    min-width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-grid;
+    place-items: center;
+    background: var(--nhs-blue);
+    color: #fff;
+    font-weight: 900;
+  }
+  .player-name {
+    color: var(--nhs-dark-blue);
+    font-weight: 900;
+  }
+  .leaderboard-note {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 10px;
+  }
+  .small-link {
+    color: var(--nhs-blue);
+    font-weight: 700;
+  }
+  .screen-reader {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .burst {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    display: none;
+    place-items: center;
+    pointer-events: none;
+  }
+  .burst.show { display: grid; }
+  .burst.safe { background: rgba(0,150,57,0.08); }
+  .burst.partial { background: rgba(255,184,28,0.12); animation: wobbleScreen 0.6s ease; }
+  .burst.risky {
+    background: radial-gradient(circle, rgba(218,41,28,0.34) 0%, rgba(218,41,28,0.10) 45%, rgba(218,41,28,0.02) 100%);
+    animation: shakeScreen 0.45s ease;
+  }
+  .burst-badge {
+    min-width: 220px;
+    text-align: center;
+    border-radius: 999px;
+    color: #fff;
+    padding: 20px 28px;
+    font-size: 26px;
+    font-weight: 900;
+    box-shadow: 0 18px 48px rgba(0,0,0,0.22);
+    transform: scale(0.7);
+    animation: pop 0.55s cubic-bezier(.2,1.4,.35,1) forwards;
+  }
+  .safe .burst-badge { background: var(--nhs-green); }
+  .partial .burst-badge { background: var(--nhs-yellow); color: #3A2900; }
+  .risky .burst-badge { background: var(--nhs-red); }
+  .confetti {
+    position: fixed;
+    width: 8px;
+    height: 14px;
+    top: -20px;
+    border-radius: 2px;
+    animation: confettiFall 900ms ease-out forwards;
+  }
+  @keyframes confettiFall {
+    from { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    to { transform: translateY(76vh) rotate(540deg); opacity: 0; }
+  }
+  @keyframes pop {
+    0% { transform: scale(0.72); opacity: 0; }
+    70% { transform: scale(1.08); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes wobbleScreen {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(7px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(3px); }
+  }
+  @keyframes shakeScreen {
+    0%, 100% { transform: translate(0,0); }
+    20% { transform: translate(-8px,4px); }
+    40% { transform: translate(7px,-4px); }
+    60% { transform: translate(-5px,3px); }
+    80% { transform: translate(4px,-2px); }
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition: none !important;
+    }
+  }
+  @media (max-width: 780px) {
+    .top-status-inner {
+      grid-template-columns: 1fr;
+    }
+    .timer, .score-chip {
+      width: 100%;
+    }
+    .question-shell, .intro-grid, .dashboard-grid, .name-panel {
+      grid-template-columns: 1fr;
+    }
+    .card { padding: 18px; }
+    .submit-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="badge">Week 1 · The Landscape · Step 1.5</div>
+  <h1>Trust, Check or Escalate?</h1>
+  <p>Six quick decisions about AI tools already appearing in healthcare workflows.</p>
+</header>
+
+<div class="top-status" aria-label="Attempt status">
+  <div class="top-status-inner">
+    <div class="progress-shell">
+      <div class="progress-meta">
+        <span id="progressText">Not started</span>
+        <span id="questionText">0 of 6 complete</span>
+      </div>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+    <div class="timer" id="timerChip">20s</div>
+    <div class="score-chip" id="scoreChip">0 / 60</div>
+  </div>
+</div>
+
+<main id="app" tabindex="-1"></main>
+<div id="liveRegion" class="screen-reader" aria-live="polite"></div>
+<div class="burst" id="burst"><div class="burst-badge" id="burstBadge"></div></div>
+
+<script>
+const defaultQuestionnaire = [
+  {
+    "id": "appointment-reminder",
+    "title": "Routine appointment reminder",
+    "setting": "Outpatient clinic, Monday morning",
+    "capability": "Workflow support",
+    "scenario": "An AI tool drafts text-message reminders for tomorrow's outpatient appointments. It uses the standard template the clinic agreed last year. You are asked to review the batch before they go out.",
+    "clues": [
+      "Same template the team approved",
+      "Low-risk, high-volume task",
+      "Patient details auto-filled from the booking system"
+    ],
+    "options": [
+      {
+        "label": "Trust",
+        "rating": "Safe choice",
+        "score": 10,
+        "recommended": true,
+        "feedback": "Right call. Routine, low-risk workflow support with a pre-approved template is a textbook Trust scenario: quick visual sanity check and send."
+      },
+      {
+        "label": "Check",
+        "rating": "Partially safe",
+        "score": 5,
+        "recommended": false,
+        "feedback": "Not wrong, just slow. Checking every reminder by hand defeats the workflow benefit. Spot-check a sample instead."
+      },
+      {
+        "label": "Escalate",
+        "rating": "Risky choice",
+        "score": 0,
+        "recommended": false,
+        "feedback": "Escalating reminders consumes a senior clinician's time on a low-risk task. Save escalation for genuine safety concerns."
+      }
+    ],
+    "recommended_answer": "Trust",
+    "human_check": "Spot-check a few messages for the right date and clinic. No deeper review is needed.",
+    "learning": "Trust when the task is routine, low-risk, reversible, and uses an agreed template.",
+    "citation": "https://jamanetwork.com/journals/jamanetworkopen/fullarticle/2824738"
+  },
+  {
+    "id": "ambient-documentation",
+    "title": "Ambient documentation",
+    "setting": "GP consultation room",
+    "capability": "Listening and documentation",
+    "scenario": "An ambient AI scribe listened to your consultation and produced a draft clinic letter. It looks polished and uses the right structure. The patient discussed a new symptom near the end.",
+    "clues": [
+      "Polished but unverified text",
+      "New symptom mentioned late in the consultation",
+      "Goes into the permanent record"
+    ],
+    "options": [
+      {
+        "label": "Trust",
+        "rating": "Risky choice",
+        "score": 0,
+        "recommended": false,
+        "feedback": "Polished does not mean correct. Ambient scribes can drop or invent details, especially around things mentioned late in the consultation."
+      },
+      {
+        "label": "Check",
+        "rating": "Safe choice",
+        "score": 10,
+        "recommended": true,
+        "feedback": "Right call. Read it through, confirm the new symptom is captured accurately, and edit before signing."
+      },
+      {
+        "label": "Escalate",
+        "rating": "Partially safe",
+        "score": 5,
+        "recommended": false,
+        "feedback": "Cautious, but full escalation is not needed for a routine scribe output you can review yourself."
+      }
+    ],
+    "recommended_answer": "Check",
+    "human_check": "Read the full draft, confirm the new symptom and plan are accurately reflected, then edit and sign.",
+    "learning": "Check when AI produces text that goes into the clinical record.",
+    "citation": "https://www.england.nhs.uk/long-read/guidance-on-the-use-of-ai-enabled-ambient-scribing-products-in-health-and-care-settings/"
+  },
+  {
+    "id": "online-request-routing",
+    "title": "Online request routing",
+    "setting": "Practice inbox, mid-afternoon",
+    "capability": "Triage and routing",
+    "scenario": "An AI triage tool sorts online consultation requests. It has routed a patient describing 'sudden severe chest pain radiating to the arm' into the routine GP queue with a 3-day wait.",
+    "clues": [
+      "Classic red-flag symptoms",
+      "Wait time clearly inappropriate",
+      "AI made a routing decision a human normally makes"
+    ],
+    "options": [
+      {
+        "label": "Trust",
+        "rating": "Risky choice",
+        "score": 0,
+        "recommended": false,
+        "feedback": "These are red-flag symptoms. Trusting the routine queue here could cost a life."
+      },
+      {
+        "label": "Check",
+        "rating": "Partially safe",
+        "score": 5,
+        "recommended": false,
+        "feedback": "Checking is better than trusting, but with red-flag chest pain you need to act now, not investigate the tool first."
+      },
+      {
+        "label": "Escalate",
+        "rating": "Safe choice",
+        "score": 10,
+        "recommended": true,
+        "feedback": "Right call. Pull the patient out of the queue, contact them immediately, and report the routing failure so it can be fixed."
+      }
+    ],
+    "recommended_answer": "Escalate",
+    "human_check": "Contact the patient now. Use the urgent pathway your service has agreed for suspected acute coronary syndrome.",
+    "learning": "Escalate when the AI's decision could delay urgent care.",
+    "citation": "https://www.england.nhs.uk/long-read/digitally-enabled-triage/"
+  },
+  {
+    "id": "ward-deterioration-dashboard",
+    "title": "Ward deterioration dashboard",
+    "setting": "Acute medical ward, night shift",
+    "capability": "Prediction and risk",
+    "scenario": "A deterioration-risk dashboard flags a patient as 'high risk' for the next 12 hours. Their last set of observations was normal an hour ago and they look comfortable.",
+    "clues": [
+      "Prediction disagrees with current observations",
+      "No immediate clinical change",
+      "Score is opaque: you do not see why it fired"
+    ],
+    "options": [
+      {
+        "label": "Trust",
+        "rating": "Partially safe",
+        "score": 5,
+        "recommended": false,
+        "feedback": "Acting on the score alone without re-examining the patient misses the point of the alert."
+      },
+      {
+        "label": "Check",
+        "rating": "Safe choice",
+        "score": 10,
+        "recommended": true,
+        "feedback": "Right call. Go and look: repeat observations, review trends, check recent bloods. The score is a prompt to think, not a diagnosis."
+      },
+      {
+        "label": "Escalate",
+        "rating": "Risky choice",
+        "score": 0,
+        "recommended": false,
+        "feedback": "Escalating to the registrar without a fresh review wastes time and undermines the tool. Check first."
+      }
+    ],
+    "recommended_answer": "Check",
+    "human_check": "Bedside review, fresh observations, review trends and recent results. Document your reasoning.",
+    "learning": "Check by going back to the patient: predictions prompt review, they do not replace it.",
+    "citation": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12131336/"
+  },
+  {
+    "id": "imaging-flag",
+    "title": "Imaging flag",
+    "setting": "Radiology reporting list",
+    "capability": "Pattern recognition",
+    "scenario": "A chest X-ray AI flags a possible large pneumothorax on a patient who came in with mild shortness of breath. The image quality is good.",
+    "clues": [
+      "AI pattern match on a time-critical finding",
+      "Mismatch between presenting symptoms and finding",
+      "Treatment pathway is well-defined"
+    ],
+    "options": [
+      {
+        "label": "Trust",
+        "rating": "Risky choice",
+        "score": 0,
+        "recommended": false,
+        "feedback": "Even if you confirm the finding yourself, this needs immediate clinical action, not just a reporting decision."
+      },
+      {
+        "label": "Check",
+        "rating": "Partially safe",
+        "score": 5,
+        "recommended": false,
+        "feedback": "You should absolutely confirm the image, but do not stop there: a large pneumothorax needs urgent clinical contact."
+      },
+      {
+        "label": "Escalate",
+        "rating": "Safe choice",
+        "score": 10,
+        "recommended": true,
+        "feedback": "Right call. Confirm the finding and contact the clinical team immediately. AI flagged it; the human acts on it."
+      }
+    ],
+    "recommended_answer": "Escalate",
+    "human_check": "Radiologist confirms the image; clinical team is contacted directly. Do not rely on the report alone.",
+    "learning": "Escalate when a time-critical finding needs human action now.",
+    "citation": "https://www.nice.org.uk/consultations/2134/1/the-diagnostic-tests"
+  },
+  {
+    "id": "discharge-summary",
+    "title": "Discharge summary",
+    "setting": "Surgical ward, discharge round",
+    "capability": "Reading and summarising",
+    "scenario": "An AI tool drafts a discharge summary from the notes. It omits a new penicillin allergy that was recorded yesterday after an inpatient reaction.",
+    "clues": [
+      "Summarisation can drop recent or critical details",
+      "Allergy status is safety-critical",
+      "Summary goes to the GP and pharmacy"
+    ],
+    "options": [
+      {
+        "label": "Trust",
+        "rating": "Risky choice",
+        "score": 0,
+        "recommended": false,
+        "feedback": "Trusting a summary that omits a new allergy is a clear prescribing-error risk downstream."
+      },
+      {
+        "label": "Check",
+        "rating": "Partially safe",
+        "score": 5,
+        "recommended": false,
+        "feedback": "Editing the summary yourself is good, but the underlying issue - the tool missing a recent allergy - needs reporting so others do not hit it."
+      },
+      {
+        "label": "Escalate",
+        "rating": "Safe choice",
+        "score": 10,
+        "recommended": true,
+        "feedback": "Right call. Fix the summary, then flag the tool's miss through your incident or feedback channel so the team knows the pattern."
+      }
+    ],
+    "recommended_answer": "Escalate",
+    "human_check": "Add the allergy, double-check medicines, and report the AI omission through your local route.",
+    "learning": "Escalate when AI drops safety-critical information.",
+    "citation": "https://www.nature.com/articles/s41598-025-01618-7"
+  }
+];
+const TIME_LIMIT = 20;
+const STORAGE_KEY = "ai4hcw-step15-trust-check-escalate-v1";
+const LEADERBOARD_KEY = "ai4hcw-step15-trust-check-escalate-leaderboard-v1";
+
+let attempt = loadAttempt();
+let timerId = null;
+let secondsLeft = TIME_LIMIT;
+
+function freshAttempt() {
+  return {
+    phase: "intro",
+    index: 0,
+    score: 0,
+    playerName: "",
+    generatedName: false,
+    leaderboardSaved: false,
+    leaderboardEntryId: "",
+    selected: null,
+    lastAnswer: null,
+    answers: []
+  };
+}
+
+function loadAttempt() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (stored && Array.isArray(stored.answers) && typeof stored.index === "number") {
+      return { ...freshAttempt(), ...stored };
+    }
+  } catch (err) {}
+  return freshAttempt();
+}
+
+function saveAttempt() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(attempt));
+}
+
+function generateCoolName() {
+  const adjectives = [
+    "Signal", "Rapid", "Steady", "Bright", "Calm", "Sharp", "Kind", "Quantum",
+    "Brave", "Clever", "Neon", "Sterling", "Nova", "Vector", "Pulse", "Atlas"
+  ];
+  const nouns = [
+    "Navigator", "Sentinel", "Scout", "Clinician", "Analyst", "Scribe", "Mapper",
+    "Guardian", "Responder", "Decoder", "Operator", "Pilot", "Pathfinder", "Reviewer"
+  ];
+  const pick = list => list[Math.floor(Math.random() * list.length)];
+  return pick(adjectives) + " " + pick(nouns);
+}
+
+function displayName() {
+  return attempt.playerName || "Anonymous learner";
+}
+
+function getLeaderboard() {
+  try {
+    const board = JSON.parse(localStorage.getItem(LEADERBOARD_KEY));
+    return Array.isArray(board) ? board : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+function saveLeaderboard(board) {
+  localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(board.slice(0, 30)));
+}
+
+function leaderboardSort(a, b) {
+  if (b.score !== a.score) return b.score - a.score;
+  if (b.safe !== a.safe) return b.safe - a.safe;
+  const bTime = new Date(b.completedAt || 0).getTime() || 0;
+  const aTime = new Date(a.completedAt || 0).getTime() || 0;
+  return bTime - aTime;
+}
+
+function scoreBreakdown(answers = attempt.answers) {
+  return {
+    safe: answers.filter(a => a.rating === "Safe choice").length,
+    partial: answers.filter(a => a.rating === "Partially safe").length,
+    risky: answers.filter(a => a.rating === "Risky choice").length
+  };
+}
+
+function currentLeaderboardEntry(total) {
+  const breakdown = scoreBreakdown();
+  return {
+    id: "live-current-attempt",
+    name: displayName(),
+    score: attempt.score,
+    total,
+    percent: Math.round((attempt.score / total) * 100),
+    safe: breakdown.safe,
+    partial: breakdown.partial,
+    risky: breakdown.risky,
+    completedAt: new Date().toISOString(),
+    live: true
+  };
+}
+
+function leaderboardTargets(total) {
+  const scenarioCount = defaultQuestionnaire.length;
+  const targetPartial = Math.min(2, scenarioCount);
+  const targetSafe = Math.max(0, scenarioCount - targetPartial);
+  const strongScore = (targetSafe * 10) + (targetPartial * 5);
+  return [
+    {
+      id: "target-perfect-run",
+      name: "Perfect safety run",
+      score: total,
+      total,
+      percent: 100,
+      safe: scenarioCount,
+      partial: 0,
+      risky: 0,
+      completedAt: "",
+      benchmark: true
+    },
+    {
+      id: "target-strong-run",
+      name: "Strong pass target",
+      score: strongScore,
+      total,
+      percent: Math.round((strongScore / total) * 100),
+      safe: targetSafe,
+      partial: targetPartial,
+      risky: 0,
+      completedAt: "",
+      benchmark: true
+    }
+  ];
+}
+
+function leaderboardRowsHtml(total, options = {}) {
+  const includeLive = !!options.includeLive;
+  const includeTargets = !!options.includeTargets;
+  const limit = options.limit || 10;
+  const rows = [
+    ...(includeTargets ? leaderboardTargets(total) : []),
+    ...getLeaderboard()
+  ];
+  let activeId = attempt.leaderboardEntryId;
+  if (includeLive) {
+    const liveEntry = currentLeaderboardEntry(total);
+    rows.push(liveEntry);
+    activeId = liveEntry.id;
+  }
+  const sorted = rows.sort(leaderboardSort);
+  const visible = sorted.slice(0, limit);
+  if (activeId && !visible.some(entry => entry.id === activeId)) {
+    const activeEntry = sorted.find(entry => entry.id === activeId);
+    if (activeEntry) visible.push(activeEntry);
+  }
+  if (!visible.length) {
+    return `<tr><td colspan="6">No attempts saved yet.</td></tr>`;
+  }
+  return visible.map(entry => {
+    const rank = sorted.findIndex(row => row.id === entry.id) + 1;
+    const rowClass = [
+      entry.id === activeId ? "current-player" : "",
+      entry.live ? "live-row" : "",
+      entry.benchmark ? "benchmark-row" : ""
+    ].filter(Boolean).join(" ");
+    const tag = entry.live
+      ? `<span class="leaderboard-tag live">live</span>`
+      : entry.benchmark
+        ? `<span class="leaderboard-tag target">target</span>`
+        : entry.id === attempt.leaderboardEntryId
+          ? `<span class="leaderboard-tag live">you</span>`
+          : "";
+    const dateLabel = entry.live ? "Now" : entry.benchmark ? "Target" : formatDate(entry.completedAt);
+    return `
+            <tr class="${rowClass}">
+              <td><span class="rank-badge">${rank}</span></td>
+              <td><span class="player-name">${escapeHtml(entry.name)}</span>${tag}</td>
+              <td>${entry.score}/${entry.total}</td>
+              <td>${entry.percent}%</td>
+              <td>${entry.safe}/${entry.partial}/${entry.risky}</td>
+              <td>${escapeHtml(dateLabel)}</td>
+            </tr>`;
+  }).join("");
+}
+
+function ensureLeaderboardEntry(total) {
+  if (attempt.leaderboardSaved) return;
+  const breakdown = scoreBreakdown();
+  const entry = {
+    id: "entry-" + Date.now() + "-" + Math.random().toString(16).slice(2),
+    name: displayName(),
+    score: attempt.score,
+    total,
+    percent: Math.round((attempt.score / total) * 100),
+    safe: breakdown.safe,
+    partial: breakdown.partial,
+    risky: breakdown.risky,
+    completedAt: new Date().toISOString()
+  };
+  const board = getLeaderboard();
+  board.push(entry);
+  board.sort(leaderboardSort);
+  saveLeaderboard(board);
+  attempt.leaderboardSaved = true;
+  attempt.leaderboardEntryId = entry.id;
+  saveAttempt();
+}
+
+function clearLeaderboard() {
+  localStorage.removeItem(LEADERBOARD_KEY);
+  if (attempt.phase === "complete") render();
+}
+
+function formatDate(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function ratingClass(rating) {
+  if (rating === "Safe choice") return "safe";
+  if (rating === "Partially safe") return "partial";
+  return "risky";
+}
+
+function decisionClass(label) {
+  return label.toLowerCase();
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[ch]));
+}
+
+function completedCount() {
+  return attempt.answers.length;
+}
+
+function updateStatus() {
+  const total = defaultQuestionnaire.length;
+  const complete = completedCount();
+  document.getElementById("progressFill").style.width = (complete / total * 100) + "%";
+  document.getElementById("progressText").textContent =
+    attempt.phase === "complete" ? "Attempt complete" :
+    attempt.phase === "intro" ? "Ready to start" :
+    attempt.phase === "dashboard" ? "Round progress" :
+    "Scenario in progress";
+  document.getElementById("questionText").textContent = complete + " of " + total + " complete";
+  document.getElementById("scoreChip").textContent = attempt.score + " / " + (total * 10);
+}
+
+function startTimer() {
+  stopTimer();
+  secondsLeft = TIME_LIMIT;
+  tickTimer();
+  timerId = window.setInterval(() => {
+    secondsLeft -= 1;
+    tickTimer();
+    if (secondsLeft <= 0) {
+      stopTimer();
+      autoSubmit();
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerId) window.clearInterval(timerId);
+  timerId = null;
+}
+
+function tickTimer() {
+  const chip = document.getElementById("timerChip");
+  chip.textContent = secondsLeft + "s";
+  chip.classList.remove("warning", "danger");
+  if (secondsLeft <= 5) chip.classList.add("danger");
+  else if (secondsLeft <= 9) chip.classList.add("warning");
+}
+
+function setTimerIdle(text = "20s") {
+  const chip = document.getElementById("timerChip");
+  chip.textContent = text;
+  chip.classList.remove("warning", "danger");
+}
+
+function render() {
+  stopTimer();
+  updateStatus();
+  if (attempt.phase === "intro") renderIntro();
+  if (attempt.phase === "question") renderQuestion();
+  if (attempt.phase === "feedback") renderFeedback();
+  if (attempt.phase === "dashboard") renderDashboard();
+  if (attempt.phase === "complete") renderComplete();
+  saveAttempt();
+  document.getElementById("app").focus({ preventScroll: true });
+}
+
+function renderIntro() {
+  setTimerIdle("20s");
+  document.getElementById("app").innerHTML = `
+    <section class="card">
+      <div class="eyebrow">Learning by doing</div>
+      <h2 class="card-title">AI safety is often a judgement call</h2>
+      <p>You will see six short scenarios based on common AI-supported tasks in healthcare: appointment reminders, ambient scribes, online request routing, deterioration dashboards, imaging flags, and discharge summaries.</p>
+      <p>For each one, decide whether the safest response is to <strong>Trust</strong>, <strong>Check</strong>, or <strong>Escalate</strong>. You have 20 seconds per scenario. If time runs out, your selected answer is submitted; if nothing is selected, it scores zero.</p>
+      <div class="intro-grid">
+        <div class="mini-panel"><strong>Trust</strong>Low-risk, bounded workflow support where a light sanity check is enough.</div>
+        <div class="mini-panel"><strong>Check</strong>Clinical content, predictions, or summaries that need human verification.</div>
+        <div class="mini-panel"><strong>Escalate</strong>Red flags, urgent findings, safety-critical omissions, or unsafe routing.</div>
+      </div>
+      <div class="name-panel">
+        <div class="name-field">
+          <label for="playerName">Display name for the leaderboard (optional)</label>
+          <input class="name-input" id="playerName" maxlength="32" autocomplete="off" placeholder="First name, team name, or nickname">
+          <p class="hint-text">Leave this blank and the activity will generate a random cool name for you. Do not enter patient-identifiable information.</p>
+        </div>
+        <div class="identity-card">
+          <strong>Local leaderboard</strong>
+          Your result will be saved on this browser only. A shared class-wide leaderboard would need a separate database or form connection.
+        </div>
+      </div>
+      <div class="submit-row">
+        <span class="hint-text">Educational only. This is not clinical decision support.</span>
+        <button class="btn btn-primary" onclick="beginAttempt(false)">Start activity</button>
+      </div>
+    </section>`;
+}
+
+function beginAttempt(reset) {
+  if (reset) attempt = freshAttempt();
+  const nameInput = document.getElementById("playerName");
+  const typedName = nameInput ? nameInput.value.trim().replace(/\s+/g, " ") : "";
+  if (!attempt.playerName || attempt.phase === "intro") {
+    attempt.playerName = typedName || generateCoolName();
+    attempt.generatedName = !typedName;
+  }
+  attempt.phase = "question";
+  attempt.index = Math.min(attempt.index, defaultQuestionnaire.length - 1);
+  attempt.selected = null;
+  render();
+}
+
+function renderQuestion() {
+  const q = defaultQuestionnaire[attempt.index];
+  setTimerIdle(TIME_LIMIT + "s");
+  document.getElementById("app").innerHTML = `
+    <section class="question-shell">
+      <article class="card scenario-card">
+        <div class="scene-header">
+          <div class="eyebrow">Scenario ${attempt.index + 1} of ${defaultQuestionnaire.length} - clinical briefing</div>
+          <h2 class="scene-title">${escapeHtml(q.title)}</h2>
+          <div class="scene-tags">
+            <span class="scene-tag">${escapeHtml(q.setting)}</span>
+            <span class="scene-tag">AI capability: ${escapeHtml(q.capability)}</span>
+            <span class="scene-tag">Player: ${escapeHtml(displayName())}</span>
+          </div>
+        </div>
+        <div class="scene-body">
+          <div class="briefing-label">Situation</div>
+          <div class="briefing-card">
+            <h3>What just happened?</h3>
+            <p class="scenario-text">${escapeHtml(q.scenario)}</p>
+          </div>
+          <div class="briefing-label">What to notice</div>
+          <div class="clue-grid">
+            ${q.clues.map((c, i) => `
+              <div class="clue-card">
+                <span class="clue-index">${i + 1}</span>
+                <span>${escapeHtml(c)}</span>
+              </div>`).join("")}
+          </div>
+          <div class="safety-lens">
+            <strong>Safety lens</strong>
+            Decide whether this is a bounded task you can rely on, an output you need to verify, or a safety issue that needs action now.
+          </div>
+        </div>
+      </article>
+      <aside class="card decision-panel">
+        <div class="eyebrow">Choose one</div>
+        <h2 class="card-title">What would you do?</h2>
+        <div class="options" role="radiogroup" aria-label="Decision options">
+          ${q.options.map((opt, i) => `
+            <button class="option-btn ${decisionClass(opt.label)} ${attempt.selected === i ? "selected" : ""}" onclick="selectOption(${i})" role="radio" aria-checked="${attempt.selected === i}">
+              <span class="option-icon">${opt.label[0]}</span>
+              <span><span class="option-label">${escapeHtml(opt.label)}</span><span class="hint-text">${opt.label === "Trust" ? "Use the AI output with light oversight" : opt.label === "Check" ? "Verify before acting" : "Act now and report the concern"}</span></span>
+            </button>`).join("")}
+        </div>
+        <div class="submit-row">
+          <span class="hint-text" id="selectionHint">${attempt.selected === null ? "Select an option to submit." : "Ready to submit."}</span>
+          <button class="btn btn-primary" id="submitBtn" onclick="submitSelected(false)" ${attempt.selected === null ? "disabled" : ""}>Submit</button>
+        </div>
+      </aside>
+    </section>`;
+  startTimer();
+}
+
+function selectOption(index) {
+  attempt.selected = index;
+  saveAttempt();
+  const q = defaultQuestionnaire[attempt.index];
+  document.querySelectorAll(".option-btn").forEach((btn, i) => {
+    btn.classList.toggle("selected", i === index);
+    btn.setAttribute("aria-checked", i === index ? "true" : "false");
+  });
+  document.getElementById("submitBtn").disabled = false;
+  document.getElementById("selectionHint").textContent = q.options[index].label + " selected.";
+}
+
+function scoreAnswer(q, selectedIndex, timedOut) {
+  if (selectedIndex === null || selectedIndex === undefined) {
+    return {
+      label: "No answer",
+      rating: "Risky choice",
+      score: 0,
+      feedback: "Time ran out before you chose. In real workflows, delay can be its own risk: pause, get oriented, and use the right escalation route if needed.",
+      recommended: false,
+      timedOut: true
+    };
+  }
+  return { ...q.options[selectedIndex], timedOut };
+}
+
+function autoSubmit() {
+  submitSelected(true);
+}
+
+function submitSelected(timedOut) {
+  stopTimer();
+  const q = defaultQuestionnaire[attempt.index];
+  const result = scoreAnswer(q, attempt.selected, timedOut);
+  const answer = {
+    id: q.id,
+    title: q.title,
+    selected: result.label,
+    recommended: q.recommended_answer,
+    rating: result.rating,
+    score: result.score,
+    feedback: result.feedback,
+    timedOut: !!timedOut,
+    citation: q.citation
+  };
+  attempt.score += result.score;
+  attempt.lastAnswer = answer;
+  attempt.answers.push(answer);
+  attempt.phase = "feedback";
+  saveAttempt();
+  verdictBurst(result.rating);
+  window.setTimeout(render, 760);
+}
+
+function verdictBurst(rating) {
+  const burst = document.getElementById("burst");
+  const badge = document.getElementById("burstBadge");
+  const cls = ratingClass(rating);
+  burst.className = "burst show " + cls;
+  badge.textContent = rating;
+  burst.querySelectorAll(".confetti").forEach(el => el.remove());
+  if (cls === "safe") {
+    const colours = ["#009639", "#41B6E6", "#FFB81C", "#005EB8"];
+    for (let i = 0; i < 34; i++) {
+      const piece = document.createElement("span");
+      piece.className = "confetti";
+      piece.style.left = (4 + Math.random() * 92) + "vw";
+      piece.style.background = colours[i % colours.length];
+      piece.style.animationDelay = (Math.random() * 160) + "ms";
+      piece.style.transform = "rotate(" + Math.random() * 180 + "deg)";
+      burst.appendChild(piece);
+    }
+  }
+  window.setTimeout(() => {
+    burst.className = "burst";
+    burst.querySelectorAll(".confetti").forEach(el => el.remove());
+  }, 720);
+}
+
+function renderFeedback() {
+  setTimerIdle("done");
+  const q = defaultQuestionnaire[attempt.index];
+  const a = attempt.lastAnswer;
+  const cls = ratingClass(a.rating);
+  const gotRecommended = a.selected === q.recommended_answer;
+  document.getElementById("liveRegion").textContent = a.rating + ", " + a.score + " points.";
+  document.getElementById("app").innerHTML = `
+    <section class="card feedback-hero ${cls}">
+      <div class="eyebrow">Feedback</div>
+      <h2 class="card-title">${escapeHtml(q.title)}</h2>
+      <div class="verdict-line">
+        <span class="rating ${cls}">${escapeHtml(a.rating)}</span>
+        <span class="points">${a.score}/10</span>
+        ${a.timedOut ? `<span class="pill">Timer expired</span>` : ""}
+      </div>
+      <div class="feedback-block ${cls}">
+        <strong>Your decision: ${escapeHtml(a.selected)}</strong>
+        ${escapeHtml(a.feedback)}
+      </div>
+      ${gotRecommended ? "" : `
+        <div class="feedback-block">
+          <strong>Recommended answer</strong>
+          ${escapeHtml(q.recommended_answer)}
+        </div>`}
+      <div class="feedback-block">
+        <strong>Human check needed</strong>
+        ${escapeHtml(q.human_check)}
+      </div>
+      <div class="feedback-block">
+        <strong>Key learning point</strong>
+        ${escapeHtml(q.learning)}
+      </div>
+      <p class="hint-text">Source: <a class="small-link" href="${escapeHtml(q.citation)}" target="_blank" rel="noopener">${escapeHtml(q.citation)}</a></p>
+      <div class="submit-row">
+        <span class="hint-text">Next you will see your local dashboard before continuing.</span>
+        <button class="btn btn-primary" onclick="showDashboard()">View dashboard</button>
+      </div>
+    </section>`;
+}
+
+function showDashboard() {
+  attempt.phase = "dashboard";
+  render();
+}
+
+function renderDashboard() {
+  setTimerIdle("ready");
+  const scenarioTotal = defaultQuestionnaire.length;
+  const maxScore = scenarioTotal * 10;
+  const complete = completedCount();
+  const last = attempt.lastAnswer;
+  const breakdown = scoreBreakdown();
+  const checkpointRows = leaderboardRowsHtml(maxScore, { includeLive: true, includeTargets: true, limit: 10 });
+  document.getElementById("app").innerHTML = `
+    <section class="card">
+      <div class="eyebrow">Local dashboard</div>
+      <h2 class="card-title">Round progress for ${escapeHtml(displayName())}</h2>
+      <div class="dashboard-grid">
+        <div class="metric"><div class="metric-label">Running score</div><div class="metric-value">${attempt.score}/${maxScore}</div></div>
+        <div class="metric"><div class="metric-label">Scenarios complete</div><div class="metric-value">${complete}/${scenarioTotal}</div></div>
+        <div class="metric"><div class="metric-label">Safety mix</div><div class="metric-value">${breakdown.safe}/${breakdown.partial}/${breakdown.risky}</div><div class="hint-text">safe / partial / risky</div></div>
+      </div>
+      <div class="feedback-block ${ratingClass(last.rating)}">
+        <strong>Last decision</strong>
+        ${escapeHtml(last.title)}: ${escapeHtml(last.selected)} (${escapeHtml(last.rating)}, ${last.score}/10)
+      </div>
+      <div class="submit-row">
+        <button class="btn btn-secondary" onclick="restartAttempt()">Restart</button>
+        <span class="hint-text">Your live position is shown below before you continue.</span>
+      </div>
+    </section>
+    <section class="card leaderboard-card">
+      <div class="eyebrow">Leaderboard checkpoint</div>
+      <h2 class="card-title">Live rank after ${complete} of ${scenarioTotal}</h2>
+      <div class="table-scroll">
+        <table class="leaderboard-table">
+          <thead>
+            <tr><th>Rank</th><th>Name</th><th>Score</th><th>%</th><th>Safe/Partial/Risky</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            ${checkpointRows}
+          </tbody>
+        </table>
+      </div>
+      <p class="leaderboard-note">Your live row updates after every question. It is only saved to the local leaderboard when the activity is completed.</p>
+      <div class="submit-row">
+        <span class="hint-text">Beat the target rows, then try to beat your own saved attempts.</span>
+        <button class="btn btn-primary" onclick="continueAttempt()">${complete === scenarioTotal ? "See final summary" : "Continue"}</button>
+      </div>
+    </section>`;
+}
+
+function continueAttempt() {
+  if (attempt.answers.length >= defaultQuestionnaire.length) {
+    attempt.phase = "complete";
+  } else {
+    attempt.index = attempt.answers.length;
+    attempt.selected = null;
+    attempt.lastAnswer = null;
+    attempt.phase = "question";
+  }
+  render();
+}
+
+function restartAttempt() {
+  attempt = freshAttempt();
+  localStorage.removeItem(STORAGE_KEY);
+  render();
+}
+
+function renderComplete() {
+  setTimerIdle("done");
+  const total = defaultQuestionnaire.length * 10;
+  const pct = Math.round((attempt.score / total) * 100);
+  ensureLeaderboardEntry(total);
+  const message = pct >= 85 ? "Strong safety judgement." : pct >= 65 ? "Good instincts, with a few edge cases to revisit." : "Worth replaying: focus on what changes Check into Escalate.";
+  const leaderboardRows = leaderboardRowsHtml(total, { includeLive: false, includeTargets: false, limit: 10 });
+  document.getElementById("app").innerHTML = `
+    <section class="card">
+      <div class="eyebrow">Attempt complete</div>
+      <h2 class="card-title">${message}</h2>
+      <p><strong>${escapeHtml(displayName())}</strong>${attempt.generatedName ? " was generated for this attempt because no name was entered." : " has been added to the local leaderboard."}</p>
+      <div class="dashboard-grid">
+        <div class="metric"><div class="metric-label">Final score</div><div class="metric-value">${attempt.score}/${total}</div></div>
+        <div class="metric"><div class="metric-label">Percentage</div><div class="metric-value">${pct}%</div></div>
+        <div class="metric"><div class="metric-label">Scenarios</div><div class="metric-value">${attempt.answers.length}/6</div></div>
+      </div>
+      <div class="feedback-block">
+        <strong>Carry this question into the rest of the course</strong>
+        What is this AI being used for, what information is it using, what could go wrong, and who remains responsible?
+      </div>
+      <div class="table-scroll">
+        <table class="answer-table">
+          <thead><tr><th>Scenario</th><th>Your answer</th><th>Recommended</th><th>Score</th></tr></thead>
+          <tbody>
+            ${attempt.answers.map(a => `
+              <tr>
+                <td>${escapeHtml(a.title)}</td>
+                <td><span class="rating ${ratingClass(a.rating)}">${escapeHtml(a.selected)}</span></td>
+                <td>${escapeHtml(a.recommended)}</td>
+                <td>${a.score}/10</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section class="card leaderboard-card">
+      <div class="eyebrow">Local leaderboard</div>
+      <h2 class="card-title">Scores saved on this browser</h2>
+      <div class="table-scroll">
+        <table class="leaderboard-table">
+          <thead>
+            <tr><th>Rank</th><th>Name</th><th>Score</th><th>%</th><th>Safe/Partial/Risky</th><th>Date</th></tr>
+          </thead>
+          <tbody>
+            ${leaderboardRows}
+          </tbody>
+        </table>
+      </div>
+      <p class="leaderboard-note">This is a local leaderboard stored in this browser. If you need a live leaderboard across all FutureLearn learners, this HTML would need to send scores to a database, spreadsheet, or approved form service.</p>
+      <div class="submit-row">
+        <button class="btn btn-secondary" onclick="clearLeaderboard()">Clear local leaderboard</button>
+        <button class="btn btn-primary" onclick="restartAttempt()">Try again</button>
+      </div>
+    </section>`;
+}
+
+render();
+</script>
+</body>
+</html>
