@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>From Idea to Bedside — The AI Lifecycle</title>
+<style>
+  :root{
+    --nhs-blue:#005EB8; --nhs-dark-blue:#003087; --nhs-light-blue:#41B6E6;
+    --nhs-green:#009639; --nhs-yellow:#FFB81C; --nhs-red:#DA291C; --teal:#00A499;
+    --purple:#330072; --grey:#425563; --light-grey:#F0F4F5; --text:#212B32; --text-mid:#4C6272;
+    --border:#D8DDE0; --radius:10px; --shadow:0 2px 12px rgba(0,0,0,.09);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Frutiger',Arial,Helvetica,sans-serif;background:#eef2f6;color:var(--text);line-height:1.6;padding:20px;}
+  .wrap{max-width:920px;margin:0 auto;}
+  .hero{background:linear-gradient(135deg,var(--nhs-dark-blue),var(--teal) 80%,var(--nhs-light-blue));color:#fff;border-radius:var(--radius);padding:26px 28px;margin-bottom:16px;}
+  .hero .badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 14px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;}
+  .hero h1{font-size:clamp(22px,4vw,29px);margin-bottom:8px;}
+  .hero p{opacity:.94;font-size:15px;max-width:660px;}
+
+  .statbar{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;align-items:stretch;}
+  .stat{flex:1;min-width:150px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 16px;}
+  .stat .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-mid);font-weight:700;margin-bottom:4px;}
+  .stat .val{font-size:22px;font-weight:800;color:var(--nhs-dark-blue);}
+  .acc-bar{height:8px;border-radius:6px;background:var(--light-grey);overflow:hidden;margin-top:6px;}
+  .acc-fill{height:100%;border-radius:6px;background:var(--nhs-green);transition:width .4s;}
+  .stat.reset-stat{flex:0 0 auto;display:flex;align-items:center;justify-content:center;}
+
+  .card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px;margin-bottom:16px;}
+  .card h2{font-size:17px;color:var(--nhs-dark-blue);margin-bottom:4px;}
+  .instructions{color:var(--text-mid);font-size:13.5px;margin-bottom:18px;}
+
+  .pipeline{display:flex;justify-content:space-between;position:relative;margin-bottom:4px;}
+  .node{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;cursor:pointer;position:relative;padding:0 2px;}
+  .node:not(:last-child)::after{content:'';position:absolute;top:19px;left:50%;width:100%;height:2px;background:var(--border);z-index:0;}
+  .node.visited:not(:last-child)::after{background:var(--nhs-green);}
+  .circle{width:38px;height:38px;border-radius:50%;background:#fff;border:2.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;position:relative;z-index:1;transition:.15s;}
+  .node:hover .circle{border-color:var(--teal);}
+  .node.active .circle{border-color:var(--nhs-blue);box-shadow:0 0 0 4px rgba(0,94,184,.15);}
+  .node.visited .circle{background:#E6F4EA;border-color:var(--nhs-green);}
+  .node .num{position:absolute;top:-6px;right:calc(50% - 26px);background:var(--nhs-dark-blue);color:#fff;font-size:9px;font-weight:800;width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:2;}
+  .node .lbl{font-size:9.5px;font-weight:800;margin-top:6px;color:var(--text-mid);max-width:84px;line-height:1.25;}
+  .node.active .lbl{color:var(--nhs-dark-blue);}
+
+  @media(max-width:680px){
+    .pipeline{flex-direction:column;gap:8px;}
+    .node{flex-direction:row;align-items:center;text-align:left;gap:12px;padding:4px 2px;}
+    .node:not(:last-child)::after{content:none;}
+    .node .num{top:-4px;right:auto;left:-4px;}
+    .node .lbl{margin-top:0;max-width:none;font-size:12.5px;}
+  }
+
+  .scroll-hint{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--nhs-blue);font-size:12.5px;font-weight:700;margin:6px 0 14px;animation:bob 1.4s ease-in-out infinite;}
+  .scroll-hint.hidden{display:none;}
+  @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(4px);}}
+
+  .loop-note{background:#E8F4FD;border-left:4px solid var(--nhs-light-blue);border-radius:0 8px 8px 0;padding:12px 16px;margin:18px 0 0;font-size:13.5px;color:var(--text-mid);}
+  .loop-note b{color:var(--text);}
+
+  .detail{border-top:1px solid var(--border);margin-top:10px;padding-top:16px;scroll-margin-top:16px;}
+  .detail .placeholder{color:var(--text-mid);font-size:14px;text-align:center;padding:20px 10px;}
+  .detail-head{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+  .detail-head .icon{font-size:30px;}
+  .detail-head h3{font-size:19px;color:var(--nhs-dark-blue);}
+  .detail-head .stage-no{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-mid);font-weight:700;}
+  .detail-desc{font-size:14.5px;color:var(--text);margin-bottom:14px;}
+
+  .reg-badge{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:8px;margin-bottom:14px;}
+  .reg-badge.dcb0129{background:#F3EEFB;color:var(--purple);border:1.5px solid #ddd0f2;}
+  .reg-badge.dcb0160{background:#FFF1E6;color:#9a4b00;border:1.5px solid #f5dcc4;}
+
+  .q-label{font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:8px;display:block;}
+  .text-input{width:100%;border:2px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--text);margin-bottom:8px;resize:vertical;}
+  .text-input:focus{outline:none;border-color:var(--nhs-blue);}
+  .mini-feedback{background:#E6F4EA;border-left:4px solid var(--nhs-green);border-radius:0 8px 8px 0;padding:10px 14px;font-size:13.5px;color:#0d5c2e;margin-top:6px;}
+
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+  .chip{border:2px solid var(--border);background:var(--light-grey);border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text-mid);transition:.12s;}
+  .chip:hover{border-color:var(--teal);}
+  .chip.on{background:#E6F7F5;border-color:var(--teal);color:#00655b;}
+
+  .net-holder{background:var(--light-grey);border-radius:10px;padding:10px;margin-bottom:10px;}
+  .net-holder svg{display:block;width:100%;height:auto;}
+  .net-line{stroke:var(--border);stroke-width:1.5;transition:stroke .25s, stroke-width .25s;}
+  .net-line.active{stroke:var(--nhs-blue);stroke-width:2.5;}
+  .net-line.trained{stroke:var(--nhs-green);stroke-width:1.8;opacity:.6;}
+  .net-node{fill:#fff;stroke:var(--border);stroke-width:2;transition:fill .25s, stroke .25s;}
+  .net-node.active{fill:var(--nhs-light-blue);stroke:var(--nhs-blue);}
+  .net-node.trained{fill:#E6F4EA;stroke:var(--nhs-green);}
+  .train-row{display:flex;align-items:center;gap:14px;margin-bottom:8px;flex-wrap:wrap;}
+  .epoch-label{font-size:12.5px;color:var(--text-mid);font-weight:700;font-variant-numeric:tabular-nums;}
+
+  .diagram-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px;background:var(--light-grey);border-radius:10px;padding:16px;}
+  .diagram-card{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:100px;}
+  .diagram-card.alt .diagram-icon{filter:hue-rotate(150deg);}
+  .diagram-icon{font-size:30px;margin-bottom:4px;}
+  .diagram-label{font-size:12px;font-weight:700;color:var(--text);}
+  .diagram-arrow{font-size:12px;font-weight:700;color:var(--text-mid);white-space:nowrap;flex:1;text-align:center;min-width:70px;}
+  .diagram-stack{display:flex;flex-direction:column;gap:8px;}
+  .diagram-chip{border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;text-align:center;}
+  .trainchip{background:#E8F4FD;color:var(--nhs-dark-blue);border:1.5px solid #cfe6fa;}
+  .testchip{background:#FFF6E0;color:#8a5a00;border:1.5px solid #f5e3b0;}
+  .vv-subhead{font-size:12.5px;font-weight:800;color:var(--nhs-dark-blue);margin:14px 0 8px;text-transform:uppercase;letter-spacing:.03em;}
+  .vv-subhead:first-child{margin-top:0;}
+
+  .reg-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;}
+  @media(max-width:680px){ .reg-cards{grid-template-columns:1fr;} }
+  .reg-card{border:2px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;background:var(--light-grey);transition:.15s;}
+  .reg-card:hover{border-color:var(--teal);}
+  .reg-card.open{background:#fff;border-color:var(--nhs-blue);}
+  .reg-card-head{display:flex;align-items:center;gap:8px;}
+  .reg-icon{font-size:20px;}
+  .reg-title{font-weight:800;font-size:13.5px;color:var(--text);}
+  .reg-sub{font-size:11px;color:var(--text-mid);margin-top:2px;}
+  .reg-card-body{font-size:13px;color:var(--text-mid);margin-top:10px;display:none;}
+  .reg-card.open .reg-card-body{display:block;}
+
+  .example-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px;}
+  @media(max-width:680px){ .example-grid{grid-template-columns:1fr;} }
+  .example-card{border:2px solid var(--border);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--text-mid);background:var(--light-grey);}
+  .example-card b{color:var(--text);}
+
+  .role-box{background:var(--light-grey);border:2px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:14px;}
+  .role-box .rb-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--teal);margin-bottom:6px;}
+  .role-box .rb-text{font-size:14px;color:var(--text);}
+
+  .nav-row{display:flex;justify-content:space-between;margin-top:16px;gap:10px;}
+  .btn{border-radius:8px;padding:9px 18px;font-size:13.5px;font-weight:700;cursor:pointer;transition:.15s;background:#fff;border:2px solid var(--nhs-blue);color:var(--nhs-blue);}
+  .btn:hover:not(:disabled){background:var(--nhs-blue);color:#fff;}
+  .btn:disabled{opacity:.35;cursor:not-allowed;}
+  .btn-ghost{border-color:var(--border);color:var(--text-mid);}
+  .btn-ghost:hover{background:var(--light-grey);color:var(--text);border-color:var(--border);}
+  .btn-sm{padding:7px 14px;font-size:12.5px;}
+
+  .complete-banner{background:#E6F4EA;border:2px solid var(--nhs-green);border-radius:10px;padding:16px 18px;margin-top:16px;font-size:14.5px;color:#0d5c2e;display:none;}
+  .complete-banner.show{display:block;}
+
+  .footnote{font-size:11.5px;color:var(--text-mid);font-style:italic;margin-top:14px;text-align:right;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="badge">Week 2, Step 2.2 · The AI Lifecycle</div>
+    <h1>From Idea to Bedside</h1>
+    <p>Every AI tool that reaches a ward, a clinic or a triage system has passed through the same seven stages of the lifecycle first. Type in your own problem, watch a model train, and see which regulator checks in at which point.</p>
+  </div>
+
+  <div class="statbar">
+    <div class="stat">
+      <div class="lbl">Stages explored</div>
+      <div class="val" id="stageVal">0 / 7</div>
+      <div class="acc-bar"><div class="acc-fill" id="stageFill" style="width:0%"></div></div>
+    </div>
+    <div class="stat reset-stat">
+      <button class="btn btn-ghost" onclick="resetTool()">Start again</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>The seven-stage journey</h2>
+    <p class="instructions">Click a stage below (or use Previous / Next) to work through it — several stages ask you to do something, not just read.</p>
+
+    <div class="pipeline" id="pipeline"></div>
+    <div class="scroll-hint" id="scrollHint">⌄ pick a stage above — type, click and explore below ⌄</div>
+
+    <div class="detail" id="detail">
+      <div class="placeholder" id="placeholder">Click any stage above to start exploring.</div>
+    </div>
+
+    <div class="loop-note">🔁 <b>It isn't a straight line.</b> What real-world performance evaluation turns up at stage 7 often sends the team all the way back to stage 1 — a new problem to solve, or data that needs a second look.</div>
+
+    <div class="complete-banner" id="completeBanner">
+      <b>You've walked the whole lifecycle.</b> Here's the thing to take away from it: you're not just a passive user waiting for the next alert. You're a safety mechanism embedded in the system at multiple stages — flagging when a problem's been framed wrong, questioning data that doesn't look like your patients, noticing when a tool's output doesn't match the bedside, and reporting it when something looks off after deployment.
+    </div>
+    <div class="footnote">Stage names follow the FDA's total product lifecycle model for AI/ML-based medical devices.</div>
+  </div>
+</div>
+
+<script>
+const SVGNS = 'http://www.w3.org/2000/svg';
+const state = { problem:'', dataChips:new Set(), dataNotes:'', trainDone:false, openReg:new Set() };
+const visited = new Set();
+let currentIndex = null;
+
+const stages = [
+  { icon:'🎯', title:'Planning and Design',
+    role:"Problem statements are identified here — and clinicians help define what the tool actually needs to do. Flag it if that framing doesn't match what you see in your patients." },
+  { icon:'🗂️', title:'Data Collection and Management',
+    role:"Data is gathered, labelled and governed. Clinicians may be involved in annotation and quality assurance — ask whose data it is, and whether it looks like your patients." },
+  { icon:'🧠', title:'Model Building and Tuning',
+    role:"Developers train and refine the algorithm on the prepared data. Not a stage most healthcare workers touch directly — but worth knowing the model is finding patterns, not following logic a person can simply read back." },
+  { icon:'🔬', title:'Verification and Validation',
+    role:"Early clinical evaluations, robustness testing and model comparisons happen here. A tool that sails through this stage can still fail once it meets a population it hasn't seen — the whole subject of Step 2.3." },
+  { icon:'🚀', title:'Model Deployment',
+    role:"The tool is introduced into clinical workflows — and clinicians contribute to governance, training and scaling. This is where local decisions about how a tool is rolled out really matter." },
+  { icon:'📡', title:'Operation and Monitoring',
+    role:"Continuous audit, user surveys, service evaluations and safety incident reporting all happen here. Reporting a false alarm or a pattern that looks off is exactly what keeps this stage working." },
+  { icon:'🔄', title:'Real World Performance Evaluations',
+    role:"Ongoing evaluation of the deployed model works to maintain or improve its performance over time — this is where drift (Step 2.3) actually gets caught, if anyone's looking." },
+];
+
+function el(tag, attrs, parent){
+  const e = document.createElementNS(SVGNS, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+
+function buildPipeline(){
+  const pipeline = document.getElementById('pipeline');
+  pipeline.innerHTML = '';
+  stages.forEach((s, i) => {
+    const node = document.createElement('div');
+    node.className = 'node';
+    node.dataset.i = i;
+    node.innerHTML = `<span class="num">${i+1}</span><div class="circle">${s.icon}</div><div class="lbl">${s.title}</div>`;
+    node.onclick = () => showStage(i);
+    pipeline.appendChild(node);
+  });
+}
+
+// ---------- stage-specific content builders ----------
+
+function stage1Content(){
+  return `
+    <label class="q-label">Type a clinical question you'd want an AI tool to help answer:</label>
+    <input type="text" id="problemInput" class="text-input" placeholder="e.g. Which patients on my ward are likely to deteriorate in the next 6 hours?" value="${escapeHtml(state.problem)}">
+    <button class="btn btn-sm" id="problemSubmit">Save this problem</button>
+    <div class="mini-feedback" id="problemFeedback" style="display:${state.problem ? 'block' : 'none'}">
+      Good — we'll carry <b>"${escapeHtml(state.problem)}"</b> through the rest of this exercise, the way a real project team would.
+    </div>
+  `;
+}
+function stage1Wire(){
+  document.getElementById('problemSubmit').onclick = () => {
+    const val = document.getElementById('problemInput').value.trim();
+    state.problem = val;
+    const fb = document.getElementById('problemFeedback');
+    if(val){
+      fb.style.display = 'block';
+      fb.innerHTML = `Good — we'll carry <b>"${escapeHtml(val)}"</b> through the rest of this exercise, the way a real project team would.`;
+    } else {
+      fb.style.display = 'none';
+    }
+  };
+}
+
+function stage2Content(){
+  const chips = ['Vital signs / observations','Blood & lab results','Clinical notes (free text)','Imaging','Diagnosis codes','Demographics','Past admissions / outcomes','Medication history'];
+  const problemBit = state.problem ? `“${escapeHtml(state.problem)}”` : 'your problem from Stage 1';
+  return `
+    <p class="q-label">Thinking about ${problemBit} — which data sources would you draw on? Select any that feel relevant.</p>
+    <div class="chip-row" id="dataChips">
+      ${chips.map(c => `<button type="button" class="chip ${state.dataChips.has(c)?'on':''}" data-c="${c}">${c}</button>`).join('')}
+    </div>
+    <label class="q-label" style="margin-top:6px;">Anything else — or a concern about what's missing?</label>
+    <textarea id="dataNotes" class="text-input" rows="2" placeholder="e.g. I'd want to check the sample includes patients like mine, not just one demographic.">${escapeHtml(state.dataNotes)}</textarea>
+  `;
+}
+function stage2Wire(){
+  document.querySelectorAll('#dataChips .chip').forEach(chip => {
+    chip.onclick = () => {
+      const c = chip.dataset.c;
+      if(state.dataChips.has(c)) state.dataChips.delete(c); else state.dataChips.add(c);
+      chip.classList.toggle('on');
+    };
+  });
+  document.getElementById('dataNotes').addEventListener('input', e => { state.dataNotes = e.target.value; });
+}
+
+function stage3Content(){
+  return `
+    <p class="q-label">Press train to see, in simplified form, what "learning patterns" actually looks like.</p>
+    <div class="net-holder"><svg id="netSvg" viewBox="0 0 420 200"></svg></div>
+    <div class="train-row">
+      <button class="btn btn-sm" id="trainBtn">${state.trainDone ? '↻ Train again' : '▶ Train the model'}</button>
+      <span class="epoch-label" id="epochLabel"></span>
+    </div>
+    <div class="mini-feedback" id="trainResult" style="display:${state.trainDone ? 'block' : 'none'}">
+      ✓ Trained. Notice there's no rule you could read back out — just connections that got stronger or weaker as the model saw more examples. That's what "learning patterns, not rules" means in practice.
+    </div>
+  `;
+}
+let netLines = [], netNodes = [];
+function buildNet(){
+  const svg = document.getElementById('netSvg');
+  svg.innerHTML = '';
+  netLines = []; netNodes = [];
+  const inputY = [30,80,130,180], hiddenY = [15,58,100,142,185], outputY = [70,140];
+  const inX = 45, hidX = 210, outX = 375;
+
+  inputY.forEach(y1 => hiddenY.forEach(y2 => {
+    netLines.push(el('line', { x1:inX, y1, x2:hidX, y2, class:'net-line' }, svg));
+  }));
+  hiddenY.forEach(y1 => outputY.forEach(y2 => {
+    netLines.push(el('line', { x1:hidX, y1, x2:outX, y2, class:'net-line' }, svg));
+  }));
+
+  inputY.forEach(y => netNodes.push(el('circle', { cx:inX, cy:y, r:9, class:'net-node' }, svg)));
+  hiddenY.forEach(y => netNodes.push(el('circle', { cx:hidX, cy:y, r:9, class:'net-node' }, svg)));
+  outputY.forEach(y => netNodes.push(el('circle', { cx:outX, cy:y, r:9, class:'net-node' }, svg)));
+
+  el('text', { x:inX, y:200, 'text-anchor':'middle', 'font-size':10, fill:'#4C6272' }, svg).textContent = 'input';
+  el('text', { x:hidX, y:200, 'text-anchor':'middle', 'font-size':10, fill:'#4C6272' }, svg).textContent = 'hidden layer';
+  el('text', { x:outX, y:200, 'text-anchor':'middle', 'font-size':10, fill:'#4C6272' }, svg).textContent = 'output';
+
+  if(state.trainDone) settleNet();
+}
+function settleNet(){
+  netLines.forEach(l => l.setAttribute('class','net-line trained'));
+  netNodes.forEach(n => n.setAttribute('class','net-node trained'));
+}
+function runTraining(){
+  const btn = document.getElementById('trainBtn');
+  const epochLabel = document.getElementById('epochLabel');
+  const resultBox = document.getElementById('trainResult');
+  btn.disabled = true;
+  resultBox.style.display = 'none';
+  netLines.forEach(l => l.setAttribute('class','net-line'));
+  netNodes.forEach(n => n.setAttribute('class','net-node'));
+
+  let epoch = 0;
+  const totalEpochs = 6;
+  const tick = () => {
+    epoch++;
+    epochLabel.textContent = `Training… epoch ${epoch} / ${totalEpochs}`;
+    const shuffled = [...netLines].sort(() => Math.random()-0.5).slice(0, 10);
+    shuffled.forEach(l => l.classList.add('active'));
+    const shuffledNodes = [...netNodes].sort(() => Math.random()-0.5).slice(0, 4);
+    shuffledNodes.forEach(n => n.classList.add('active'));
+    setTimeout(() => {
+      shuffled.forEach(l => l.classList.remove('active'));
+      shuffledNodes.forEach(n => n.classList.remove('active'));
+    }, 260);
+
+    if(epoch < totalEpochs){
+      setTimeout(tick, 380);
+    } else {
+      setTimeout(() => {
+        settleNet();
+        epochLabel.textContent = 'Training complete';
+        resultBox.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = '↻ Train again';
+        state.trainDone = true;
+      }, 380);
+    }
+  };
+  tick();
+}
+function stage3Wire(){
+  buildNet();
+  document.getElementById('trainBtn').onclick = runTraining;
+}
+
+function stage4Content(){
+  return `
+    <p class="detail-desc">This stage covers early clinical evaluations, robustness testing and model comparisons — usually in two parts.</p>
+    <div class="vv-subhead">Internal validation</div>
+    <div class="diagram-row">
+      <div class="diagram-card"><div class="diagram-icon">🏥</div><div class="diagram-label">Hospital A's data</div></div>
+      <div class="diagram-arrow">— split before training →</div>
+      <div class="diagram-stack">
+        <div class="diagram-chip trainchip">Training set (≈80%)</div>
+        <div class="diagram-chip testchip">Held-back test set (≈20%)</div>
+      </div>
+    </div>
+    <p class="detail-desc">The model never sees the held-back slice during training. Testing on it is a genuine check — but it's still the <em>same</em> hospital, population and time period the model was built on. Necessary, but not sufficient on its own.</p>
+    <div class="vv-subhead">External validation</div>
+    <div class="diagram-row">
+      <div class="diagram-card"><div class="diagram-icon">🏥</div><div class="diagram-label">Hospital A<br><span style="font-weight:400;">(where it was trained)</span></div></div>
+      <div class="diagram-arrow">— tested on →</div>
+      <div class="diagram-card alt"><div class="diagram-icon">🏨</div><div class="diagram-label">Hospital B<br><span style="font-weight:400;">(never seen before)</span></div></div>
+    </div>
+    <p class="detail-desc">The real test: a different institution, a different patient mix, different systems and habits. This is where a lot of promising tools start to struggle — and where Step 2.3 picks up the story.</p>
+  `;
+}
+
+function stage5Content(){
+  const cards = [
+    { k:'ukca', icon:'🇬🇧', title:'UKCA marking', sub:'The market-access gate',
+      body:"Confirms the software meets the UK's essential requirements for safety and performance as a medical device — the conformity mark that allows it to be placed on the UK market at all." },
+    { k:'mhra', icon:'⚕️', title:'MHRA classification', sub:'The safety & efficacy gate',
+      body:"The MHRA classifies the software by risk (Class I, IIa, IIb or III) and regulates it as Software as a Medical Device. The question it answers: is it safe, and does it do what it claims?" },
+    { k:'nice', icon:'💷', title:'NICE evaluation', sub:'The value gate',
+      body:"A different question entirely: is it worth the NHS paying for? NICE's evidence standards framework assesses value and cost-effectiveness — a tool can be safe and effective and still not clear this bar." },
+  ];
+  return `
+    <p class="q-label">Before a tool reaches this stage, it has to clear three different gates. Click each to see what it actually checks.</p>
+    <div class="reg-cards" id="regCards">
+      ${cards.map(c => `
+        <div class="reg-card ${state.openReg.has(c.k)?'open':''}" data-k="${c.k}">
+          <div class="reg-card-head"><span class="reg-icon">${c.icon}</span><div><div class="reg-title">${c.title}</div><div class="reg-sub">${c.sub}</div></div></div>
+          <div class="reg-card-body">${c.body}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="reg-badge dcb0160">📋 DCB0160 also starts here — your trust's own ongoing clinical risk management, separate from anything the manufacturer already did under DCB0129</div>
+    <p class="q-label">Once it's cleared, there's more than one way to actually switch it on:</p>
+    <div class="example-grid">
+      <div class="example-card"><b>Shadow / silent mode.</b> Runs in the background without acting on its output, so the team can compare its calls against what actually happened before anyone relies on it.</div>
+      <div class="example-card"><b>Advisory, clinician-in-the-loop.</b> Flags a recommendation; a human decides whether to act on it. Most current NHS deployments sit here.</div>
+      <div class="example-card"><b>Autonomous with override.</b> Acts automatically, with a clear, fast route for a clinician to step in and override it.</div>
+      <div class="example-card"><b>Phased rollout.</b> One ward or one pathway first, proven locally, before it goes trust-wide.</div>
+    </div>
+  `;
+}
+function stage5Wire(){
+  document.querySelectorAll('#regCards .reg-card').forEach(card => {
+    card.onclick = () => {
+      const k = card.dataset.k;
+      if(state.openReg.has(k)) state.openReg.delete(k); else state.openReg.add(k);
+      card.classList.toggle('open');
+    };
+  });
+}
+
+function stage6Content(){
+  return `
+    <p class="detail-desc">Deployment isn't the finish line. Once a tool is live, a handful of things run continuously to make sure it's still doing what it's supposed to:</p>
+    <div class="example-grid">
+      <div class="example-card">📊 <b>Continuous audit</b> — comparing the tool's calls against what actually happened to patients, on a regular schedule rather than a one-off check.</div>
+      <div class="example-card">🗣️ <b>User surveys</b> — asking the staff actually using the tool day to day whether it's still behaving the way they expect.</div>
+      <div class="example-card">🧾 <b>Service evaluations</b> — a step back to ask whether the tool is still delivering the service benefit it was deployed for.</div>
+      <div class="example-card">🚩 <b>Safety incident reporting</b> — MHRA Yellow Card and local systems, feeding concerns straight back into the loop.</div>
+    </div>
+    <p class="detail-desc" style="margin-top:14px;">Every one of these depends on someone actually noticing something and saying so — which is usually a healthcare worker, not a dashboard.</p>
+  `;
+}
+
+function stage7Content(){
+  const problemBit = state.problem ? `“${escapeHtml(state.problem)}”` : 'the problem you started with in Stage 1';
+  return `
+    <p class="detail-desc">The final stage isn't really final — it's ongoing. Real-world performance evaluation checks, over months and years, whether the tool is still performing the way it did when it was cleared, and works to maintain or improve that performance as circumstances change.</p>
+    <p class="detail-desc">This is exactly where <b>data drift</b> and <b>concept drift</b> get caught, if anyone is looking — Step 2.3 covers both in detail. A tool answering ${problemBit} today may be answering a subtly different question in two years, as your population, referral patterns or working practices shift underneath it.</p>
+    <p class="detail-desc">When evaluation turns something up, the response isn't always a quick fix — sometimes it's retraining the model on newer data, sometimes it's tightening how the tool is used, and sometimes it's going all the way back to Stage 1 to reconsider whether the original problem statement still holds.</p>
+  `;
+}
+
+// ---------- generic stage rendering ----------
+
+function regBadgeFor(i){
+  if(i === 0) return `<div class="reg-badge dcb0129">📋 DCB0129 — the manufacturer's clinical risk log opens here, at the very first framing of the problem</div>`;
+  if(i === 1) return `<div class="reg-badge dcb0129">📋 DCB0129 continues — data provenance and quality are part of the same risk log</div>`;
+  return '';
+}
+
+function showStage(i){
+  currentIndex = i;
+  visited.add(i);
+
+  document.querySelectorAll('.node').forEach((n, idx) => {
+    n.classList.toggle('active', idx === i);
+    n.classList.toggle('visited', visited.has(idx));
+  });
+
+  const s = stages[i];
+  document.getElementById('placeholder').style.display = 'none';
+  document.getElementById('scrollHint').classList.add('hidden');
+  const detail = document.getElementById('detail');
+  let existing = detail.querySelector('.detail-body');
+  if(existing) existing.remove();
+
+  const builders = [stage1Content, stage2Content, stage3Content, stage4Content, stage5Content, stage6Content, stage7Content];
+  const wirers = [stage1Wire, stage2Wire, stage3Wire, null, stage5Wire, null, null];
+
+  const body = document.createElement('div');
+  body.className = 'detail-body';
+  body.innerHTML = `
+    <div class="detail-head">
+      <span class="icon">${s.icon}</span>
+      <div>
+        <div class="stage-no">Stage ${i+1} of 7</div>
+        <h3>${s.title}</h3>
+      </div>
+    </div>
+    ${regBadgeFor(i)}
+    ${builders[i]()}
+    <div class="role-box">
+      <div class="rb-label">Where you come in</div>
+      <div class="rb-text">${s.role}</div>
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-ghost" id="prevBtn" ${i===0?'disabled':''}>← Previous stage</button>
+      <button class="btn" id="nextBtn" ${i===stages.length-1?'disabled':''}>Next stage →</button>
+    </div>
+  `;
+  detail.appendChild(body);
+  if(wirers[i]) wirers[i]();
+
+  document.getElementById('prevBtn').onclick = () => showStage(Math.max(0, i-1));
+  document.getElementById('nextBtn').onclick = () => showStage(Math.min(stages.length-1, i+1));
+
+  updateStats();
+  detail.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function escapeHtml(str){
+  return (str||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function updateStats(){
+  document.getElementById('stageVal').textContent = `${visited.size} / ${stages.length}`;
+  document.getElementById('stageFill').style.width = `${(visited.size/stages.length)*100}%`;
+
+  const banner = document.getElementById('completeBanner');
+  if(visited.size === stages.length){
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+function resetTool(){
+  visited.clear();
+  currentIndex = null;
+  state.problem = ''; state.dataChips = new Set(); state.dataNotes = ''; state.trainDone = false; state.openReg = new Set();
+  document.getElementById('placeholder').style.display = 'block';
+  document.getElementById('scrollHint').classList.remove('hidden');
+  const existing = document.querySelector('.detail-body');
+  if(existing) existing.remove();
+  document.getElementById('completeBanner').classList.remove('show');
+  buildPipeline();
+  updateStats();
+}
+
+buildPipeline();
+updateStats();
+</script>
+</body>
+</html>
