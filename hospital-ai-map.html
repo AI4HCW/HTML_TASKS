@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Explore the System — AI Across a Healthcare System</title>
+<style>
+  :root{
+    --nhs-blue:#005EB8; --nhs-dark-blue:#003087; --nhs-light-blue:#41B6E6;
+    --nhs-green:#009639; --nhs-yellow:#FFB81C; --nhs-red:#DA291C; --teal:#00A499;
+    --purple:#330072; --grey:#425563; --light-grey:#F0F4F5; --text:#212B32; --text-mid:#4C6272;
+    --border:#D8DDE0; --radius:10px; --shadow:0 2px 12px rgba(0,0,0,.09);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Frutiger',Arial,Helvetica,sans-serif;background:#eef2f6;color:var(--text);line-height:1.6;padding:20px;}
+  .wrap{max-width:980px;margin:0 auto;}
+  .hero{background:linear-gradient(135deg,var(--nhs-dark-blue),var(--teal) 80%,var(--nhs-light-blue));color:#fff;border-radius:var(--radius);padding:26px 28px;margin-bottom:16px;}
+  .hero .badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 14px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;}
+  .hero h1{font-size:clamp(22px,4vw,29px);margin-bottom:8px;}
+  .hero p{opacity:.94;font-size:15px;max-width:660px;}
+
+  .statbar{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;align-items:stretch;}
+  .stat{flex:1;min-width:150px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 16px;}
+  .stat .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-mid);font-weight:700;margin-bottom:4px;}
+  .stat .val{font-size:22px;font-weight:800;color:var(--nhs-dark-blue);}
+  .acc-bar{height:8px;border-radius:6px;background:var(--light-grey);overflow:hidden;margin-top:6px;}
+  .acc-fill{height:100%;border-radius:6px;background:var(--nhs-green);transition:width .4s;}
+  .stat.reset-stat{flex:0 0 auto;display:flex;align-items:center;justify-content:center;}
+
+  .card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px;margin-bottom:16px;}
+  .card h2{font-size:17px;color:var(--nhs-dark-blue);margin-bottom:4px;}
+  .instructions{color:var(--text-mid);font-size:13.5px;margin-bottom:14px;}
+
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;font-size:12.5px;color:var(--text-mid);}
+  .cat-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:800;padding:3px 10px;border-radius:10px;white-space:nowrap;}
+  .cat-rule{background:#EDEFF1;color:var(--grey);}
+  .cat-cv{background:#F3EEFB;color:var(--purple);}
+  .cat-ml{background:#FFF1E6;color:#9a4b00;}
+  .cat-lang{background:#E6F7F5;color:#00655b;}
+
+  .map-holder{position:relative;border-radius:10px;overflow:hidden;background:#E9EEF1;border:1px solid var(--border);}
+  .map-holder svg{display:block;width:100%;height:auto;}
+  .map-caption{font-size:11.5px;color:var(--text-mid);font-style:italic;margin-top:8px;text-align:right;}
+
+  .room-group{cursor:pointer;}
+  .room-rect{transition:filter .15s, stroke-width .15s;}
+  .room-group:hover .room-rect{filter:brightness(0.94);}
+  .room-group.active .room-rect{stroke:var(--nhs-dark-blue);stroke-width:4;}
+  .room-icon{font-size:26px;text-anchor:middle;pointer-events:none;}
+  .room-label{font-size:11.5px;font-weight:800;fill:var(--text);text-anchor:middle;pointer-events:none;}
+  .room-sub{font-size:9.5px;fill:var(--text-mid);text-anchor:middle;pointer-events:none;}
+  .visited-mark{opacity:0;transition:opacity .15s;}
+  .room-group.visited .visited-mark{opacity:1;}
+  .building-title{font-size:13px;fill:var(--text-mid);text-anchor:middle;font-style:italic;}
+  .compass text{font-size:12px;font-weight:800;fill:var(--text-mid);text-anchor:middle;}
+
+  .tooltip{position:fixed;z-index:50;background:var(--nhs-dark-blue);color:#fff;border-radius:8px;padding:10px 14px;font-size:12.5px;max-width:240px;box-shadow:0 6px 18px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .1s;}
+  .tooltip.show{opacity:1;}
+  .tooltip .tt-head{font-weight:800;font-size:13.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+  .tooltip ul{margin:0;padding-left:16px;}
+  .tooltip li{margin-bottom:2px;}
+  .tooltip .tt-hint{margin-top:6px;opacity:.75;font-size:11px;font-style:italic;}
+
+  .detail{border-top:1px solid var(--border);margin-top:18px;padding-top:18px;}
+  .detail .placeholder{color:var(--text-mid);font-size:14px;text-align:center;padding:20px 10px;}
+  .detail-head{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+  .detail-head .icon{font-size:30px;}
+  .detail-head h3{font-size:19px;color:var(--nhs-dark-blue);}
+  .detail-blurb{color:var(--text-mid);font-size:14px;margin-bottom:16px;}
+
+  .tool-card{border:2px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--light-grey);}
+  .tool-name{font-weight:800;font-size:14.5px;color:var(--text);display:block;margin-bottom:8px;}
+  .tool-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+  .tool-desc{font-size:13.5px;color:var(--text-mid);}
+
+  .complete-banner{background:#E6F4EA;border:2px solid var(--nhs-green);border-radius:10px;padding:14px 18px;margin-top:16px;font-size:14px;color:#0d5c2e;display:none;}
+  .complete-banner.show{display:block;}
+
+  .btn{border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;background:#fff;border:2px solid var(--nhs-blue);color:var(--nhs-blue);}
+  .btn:hover{background:var(--nhs-blue);color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="badge">Landscape · Where AI already sits in the system</div>
+    <h1>Explore the System</h1>
+    <p>A healthcare system isn't one place, it's a whole network of departments, wards and community services, each doing something different, each with its own AI tools quietly at work. Hover over the map for a quick look, click to explore in full.</p>
+  </div>
+
+  <div class="statbar">
+    <div class="stat">
+      <div class="lbl">Departments explored</div>
+      <div class="val" id="deptVal">0 / 11</div>
+      <div class="acc-bar"><div class="acc-fill" id="deptFill" style="width:0%"></div></div>
+    </div>
+    <div class="stat">
+      <div class="lbl">Tools discovered</div>
+      <div class="val" id="toolVal">0 / 17</div>
+      <div class="acc-bar"><div class="acc-fill" id="toolFill" style="width:0%;background:var(--teal);"></div></div>
+    </div>
+    <div class="stat reset-stat">
+      <button class="btn" onclick="resetMap()">Reset map</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Site plan</h2>
+    <p class="instructions">Move your mouse over any part of the map for a quick preview, or click it to pin the full details below.</p>
+
+    <div class="legend">
+      <span class="cat-chip cat-rule">⚙️ Rule-based system</span>
+      <span class="cat-chip cat-cv">👁️ Computer vision</span>
+      <span class="cat-chip cat-ml">🧠 Machine learning</span>
+      <span class="cat-chip cat-lang">💬 Language-based system</span>
+    </div>
+
+    <div class="map-holder" id="mapHolder">
+      <svg id="mapSvg" viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div class="map-caption">Illustrative site plan — departments and layout are simplified for teaching purposes, not an actual floor plan.</div>
+
+    <div class="detail" id="detail">
+      <div class="placeholder" id="placeholder">Click any part of the map above to start exploring.</div>
+    </div>
+
+    <div class="complete-banner" id="completeBanner">
+      <b>You've mapped the whole system.</b> Notice how NEWS2, TORTUS and Deep Medical each showed up more than once, the same tool, built for one job, often gets reused wherever that same problem crops up, from A&amp;E to the ward to the GP practice.
+    </div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+const CATEGORY = {
+  rule: { label: 'Rule-based system', cls: 'cat-rule', icon: '⚙️' },
+  cv:   { label: 'Computer vision', cls: 'cat-cv', icon: '👁️' },
+  ml:   { label: 'Machine learning', cls: 'cat-ml', icon: '🧠' },
+  lang: { label: 'Language-based system', cls: 'cat-lang', icon: '💬' },
+};
+
+const CAT_FILL = {
+  clinical:   { fill:'#EAF3FC', stroke:'#005EB8' },
+  diagnostic: { fill:'#E6F7F5', stroke:'#00A499' },
+  support:    { fill:'#F0F1F2', stroke:'#425563' },
+  community:  { fill:'#F3EEFB', stroke:'#330072' },
+};
+
+const departments = [
+  { id:'ed', name:'Emergency Department', icon:'🚑', cat:'clinical', x:60,y:80,w:220,h:120,
+    blurb:"The front door of the hospital, high volume and high uncertainty, and usually the first place a deteriorating patient is spotted.",
+    tools:[
+      { name:'NEWS2 deterioration alert', cat:'rule', desc:'Flags a patient when the early-warning score crosses a threshold.' },
+      { name:'TORTUS ambient scribe', cat:'lang', desc:'Listens to the clerking conversation and drafts the note and letter.' },
+    ]},
+  { id:'rad', name:'Radiology', icon:'🩻', cat:'diagnostic', x:280,y:80,w:180,h:120,
+    blurb:"Every scan ordered anywhere in the hospital eventually lands here for a human, and increasingly a model, to read.",
+    tools:[
+      { name:'Brainomix e-Stroke', cat:'cv', desc:'Analyses brain CT scans in acute stroke to flag candidates for urgent treatment.' },
+      { name:'Qure.ai chest X-ray triage', cat:'cv', desc:"Flags likely-abnormal chest X-rays so they're reported sooner." },
+    ]},
+  { id:'card', name:'Cardiology', icon:'❤️', cat:'diagnostic', x:460,y:80,w:180,h:120,
+    blurb:"Heart rhythms and heart function generate huge amounts of signal, a natural fit for pattern-spotting AI.",
+    tools:[
+      { name:'Ultromics EchoGo', cat:'cv', desc:'Reads echocardiograms for early signs of heart failure a human eye can miss.' },
+      { name:'AI ECG interpretation', cat:'ml', desc:'Flags abnormal heart rhythms on a routine ECG for a cardiologist to check.' },
+    ]},
+  { id:'ward', name:'Medical & Surgical Wards', icon:'🛏️', cat:'clinical', x:60,y:200,w:300,h:160,
+    blurb:"Where most inpatients spend most of their stay, and where a slow overnight decline is easiest to miss on a busy shift.",
+    tools:[
+      { name:'NEWS2 deterioration alert', cat:'rule', desc:'Runs continuously on every ward to catch a patient deteriorating.' },
+      { name:'TORTUS ambient scribe', cat:'lang', desc:'Drafts the ward round note while the team talks it through at the bedside.' },
+    ]},
+  { id:'icu', name:'Critical Care / ICU', icon:'🫁', cat:'clinical', x:360,y:200,w:140,h:160,
+    blurb:"The sickest patients in the building, watched constantly, the highest-stakes place to get an early warning right.",
+    tools:[
+      { name:'ICU deterioration model', cat:'ml', desc:'Combines vitals and blood results to flag escalation risk hours ahead.' },
+      { name:'Ventilator weaning support', cat:'ml', desc:'Suggests when a patient may be ready to come off a ventilator.' },
+    ]},
+  { id:'thr', name:'Theatres & Pre-op', icon:'✂️', cat:'clinical', x:500,y:200,w:140,h:160,
+    blurb:"Every operation carries risk that varies hugely between patients, and getting the list order right matters.",
+    tools:[
+      { name:'C2-Ai', cat:'ml', desc:'Risk-stratifies the surgical waiting list by likelihood of complications.' },
+      { name:'Theatre list optimisation', cat:'ml', desc:'Predicts which operating lists are likely to overrun, before the day starts.' },
+    ]},
+  { id:'pharm', name:'Pharmacy & Medicines', icon:'💊', cat:'diagnostic', x:60,y:360,w:145,h:150,
+    blurb:"Every prescription is a chance to catch, or cause, an error, thousands of times a day.",
+    tools:[
+      { name:'Drug-allergy alert', cat:'rule', desc:'Warns you before prescribing something a patient reacts to.' },
+      { name:'Medicines reconciliation AI', cat:'lang', desc:"Cross-checks a patient's discharge medicines against what they were taking before admission." },
+    ]},
+  { id:'path', name:'Pathology & Labs', icon:'🧪', cat:'diagnostic', x:205,y:360,w:145,h:150,
+    blurb:"Samples queue for a human expert's eye, and AI is starting to help decide what gets looked at first.",
+    tools:[
+      { name:'AI-assisted screening triage', cat:'cv', desc:"Flags samples most likely to be abnormal, so they reach a pathologist's priority pile first." },
+    ]},
+  { id:'derm', name:'Dermatology & Outpatients', icon:'🔍', cat:'diagnostic', x:350,y:360,w:145,h:150,
+    blurb:"A steady stream of referral photographs and letters, well suited to triage by an image-reading model.",
+    tools:[
+      { name:'Skin Analytics DERM', cat:'cv', desc:'Triages photographs of skin lesions for cancer.' },
+    ]},
+  { id:'admin', name:'Admin & Back Office', icon:'🗂️', cat:'support', x:495,y:360,w:145,h:150,
+    blurb:"The paperwork behind every appointment, referral and discharge, where AI often saves the most time for the least fanfare.",
+    tools:[
+      { name:'Clinical coding from notes', cat:'lang', desc:'Pulls diagnoses and symptoms out of free-text records.' },
+      { name:'Deep Medical', cat:'ml', desc:'Predicts which patients will miss appointments and offers back-up slots.' },
+    ]},
+];
+
+const community = { id:'comm', name:'Primary Care & Community', icon:'🏡', cat:'community', x:760,y:330,w:190,h:150,
+  blurb:"Beyond the hospital walls, in GP practices and community teams, deciding who needs to be seen, and how urgently.",
+  tools:[
+    { name:'AI symptom-checker triage', cat:'lang', desc:'Helps patients and call handlers work out how urgently they need to be seen, and where.' },
+    { name:'Deep Medical', cat:'ml', desc:'The same no-show prediction model, in use across GP practices too.' },
+  ]};
+
+const allLocations = [...departments, community];
+const uniqueToolCount = new Set(allLocations.flatMap(d => d.tools.map(t => t.name))).size;
+document.getElementById('toolVal').textContent = `0 / ${uniqueToolCount}`;
+
+const visited = new Set();
+const toolsSeen = new Set();
+
+function el(tag, attrs, parent){
+  const e = document.createElementNS(SVGNS, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+
+function drawBuilding(svg, x, y, w, h, title){
+  el('rect', { x, y, width:w, height:h, rx:16, fill:'#ffffff', stroke:'#003087', 'stroke-width':7 }, svg);
+  el('text', { x:x+w/2, y:y-14, class:'building-title' }, svg).textContent = title;
+}
+
+function drawRoom(svg, d){
+  const m = 4;
+  const g = el('g', { class:'room-group', 'data-id':d.id }, svg);
+  const colors = CAT_FILL[d.cat];
+  el('rect', { class:'room-rect', x:d.x+m, y:d.y+m, width:d.w-2*m, height:d.h-2*m, rx:8,
+    fill:colors.fill, stroke:colors.stroke, 'stroke-width':2,
+    'stroke-dasharray': d.cat==='community' ? '7 5' : 'none' }, g);
+  el('text', { class:'room-icon', x:d.x+d.w/2, y:d.y+d.h/2-6 }, g).textContent = d.icon;
+  const label = el('text', { class:'room-label', x:d.x+d.w/2, y:d.y+d.h/2+18 }, g);
+  wrapText(label, d.name, d.w-18);
+  el('text', { class:'room-sub', x:d.x+d.w/2, y:d.y+d.h-10 }, g).textContent =
+    `${d.tools.length} AI tool${d.tools.length>1?'s':''}`;
+
+  const vm = el('g', { class:'visited-mark' }, g);
+  el('circle', { cx:d.x+d.w-m-11, cy:d.y+m+11, r:9, fill:'#009639' }, vm);
+  el('text', { x:d.x+d.w-m-11, y:d.y+m+15, 'text-anchor':'middle', 'font-size':11, fill:'#fff', 'font-weight':800 }, vm).textContent = '✓';
+
+  g.addEventListener('mouseenter', () => showTooltip(d));
+  g.addEventListener('mousemove', moveTooltip);
+  g.addEventListener('mouseleave', hideTooltip);
+  g.addEventListener('click', () => { hideTooltip(); openDetail(d, g); });
+  return g;
+}
+
+// wraps a room label onto up to 2 tspan lines so long names fit their box
+function wrapText(textEl, str, maxWidth){
+  const words = str.split(' ');
+  const approxCharW = 6.3;
+  const maxChars = Math.max(6, Math.floor(maxWidth/approxCharW));
+  let lines = [], cur = '';
+  words.forEach(w => {
+    const test = cur ? cur+' '+w : w;
+    if(test.length > maxChars && cur){ lines.push(cur); cur = w; } else { cur = test; }
+  });
+  if(cur) lines.push(cur);
+  lines = lines.slice(0,2);
+  const startDy = lines.length > 1 ? -6 : 0;
+  lines.forEach((ln,i) => {
+    el('tspan', { x:textEl.getAttribute('x'), dy: i===0 ? startDy : 12 }, textEl).textContent = ln;
+  });
+}
+
+function drawGround(svg){
+  const defs = el('defs', {}, svg);
+  const pattern = el('pattern', { id:'mapGrid', width:40, height:40, patternUnits:'userSpaceOnUse' }, defs);
+  el('path', { d:'M40 0H0V40', fill:'none', stroke:'#ffffff', 'stroke-opacity':0.55, 'stroke-width':1 }, pattern);
+
+  el('rect', { x:0, y:0, width:1000, height:600, fill:'#DCEEDD' }, svg);
+  el('rect', { x:0, y:0, width:1000, height:600, fill:'url(#mapGrid)' }, svg);
+
+  // perimeter boundary of the site
+  el('rect', { x:14, y:14, width:972, height:572, fill:'none', stroke:'#9FC7A3', 'stroke-width':2, 'stroke-dasharray':'3 6', rx:6 }, svg);
+}
+
+function drawExtras(svg){
+  // car park
+  el('rect', { x:60, y:540, width:230, height:44, rx:4, fill:'#E2E5E7', stroke:'#B9C2C9', 'stroke-width':1.5 }, svg);
+  for(let i=0;i<7;i++){
+    el('line', { x1:75+i*30, y1:544, x2:75+i*30, y2:580, stroke:'#fff', 'stroke-width':2 }, svg);
+  }
+  el('text', { x:175, y:566, 'text-anchor':'middle', 'font-size':13, 'font-weight':800, fill:'#425563' }, svg).textContent = 'P  Car park';
+
+  // access road connecting hospital to community hub, drawn like a real road
+  el('line', { x1:640, y1:400, x2:760, y2:400, stroke:'#C7CDD1', 'stroke-width':16, 'stroke-linecap':'round' }, svg);
+  el('line', { x1:640, y1:400, x2:760, y2:400, stroke:'#ffffff', 'stroke-width':2, 'stroke-dasharray':'8 8' }, svg);
+  el('text', { x:700, y:385, 'text-anchor':'middle', 'font-size':11, 'font-style':'italic', fill:'#425563' }, svg).textContent = 'Site road';
+
+  // footpath from main hospital entrance down toward the car park
+  el('line', { x1:170, y1:515, x2:170, y2:540, stroke:'#C7CDD1', 'stroke-width':10, 'stroke-linecap':'round' }, svg);
+
+  // compass rose
+  const c = el('g', { class:'compass' }, svg);
+  el('circle', { cx:940, cy:50, r:26, fill:'#fff', stroke:'#D8DDE0', 'stroke-width':2 }, c);
+  el('polygon', { points:'940,32 946,50 940,46 934,50', fill:'#DA291C' }, c);
+  el('text', { x:940, y:26 }, c).textContent = 'N';
+}
+
+function buildMap(){
+  const svg = document.getElementById('mapSvg');
+  svg.innerHTML = '';
+  drawGround(svg);
+  drawBuilding(svg, 50, 65, 600, 450, 'Riverside General Hospital (illustrative)');
+  drawBuilding(svg, 750, 320, 210, 170, 'Willowbrook GP Practice & Community Hub (illustrative)');
+  drawExtras(svg);
+  departments.forEach(d => drawRoom(svg, d));
+  drawRoom(svg, community);
+}
+
+function showTooltip(d){
+  const tt = document.getElementById('tooltip');
+  const items = d.tools.slice(0,3).map(t => `<li>${CATEGORY[t.cat].icon} ${t.name}</li>`).join('');
+  tt.innerHTML = `<div class="tt-head">${d.icon} ${d.name}</div><ul>${items}</ul><div class="tt-hint">Click for full details</div>`;
+  tt.classList.add('show');
+}
+function moveTooltip(e){
+  const tt = document.getElementById('tooltip');
+  const pad = 16;
+  let left = e.clientX + pad, top = e.clientY + pad;
+  const rect = tt.getBoundingClientRect();
+  if(left + rect.width > window.innerWidth - 10) left = e.clientX - rect.width - pad;
+  if(top + rect.height > window.innerHeight - 10) top = e.clientY - rect.height - pad;
+  tt.style.left = left + 'px';
+  tt.style.top = top + 'px';
+}
+function hideTooltip(){
+  document.getElementById('tooltip').classList.remove('show');
+}
+
+function openDetail(d, g){
+  document.querySelectorAll('.room-group').forEach(x => x.classList.remove('active'));
+  g.classList.add('active');
+
+  if(!visited.has(d.id)){
+    visited.add(d.id);
+    g.classList.add('visited');
+  }
+  d.tools.forEach(t => toolsSeen.add(t.name));
+
+  document.getElementById('placeholder').style.display = 'none';
+  const detail = document.getElementById('detail');
+  let existingBody = detail.querySelector('.detail-body');
+  if(existingBody) existingBody.remove();
+
+  const body = document.createElement('div');
+  body.className = 'detail-body';
+  body.innerHTML = `
+    <div class="detail-head"><span class="icon">${d.icon}</span><h3>${d.name}</h3></div>
+    <div class="detail-blurb">${d.blurb}</div>
+    ${d.tools.map(t => `
+      <div class="tool-card">
+        <span class="tool-name">${t.name}</span>
+        <div class="tool-tags">
+          <span class="cat-chip ${CATEGORY[t.cat].cls}">${CATEGORY[t.cat].icon} ${CATEGORY[t.cat].label}</span>
+        </div>
+        <div class="tool-desc">${t.desc}</div>
+      </div>
+    `).join('')}
+  `;
+  detail.appendChild(body);
+
+  updateStats();
+}
+
+function updateStats(){
+  document.getElementById('deptVal').textContent = `${visited.size} / ${allLocations.length}`;
+  document.getElementById('deptFill').style.width = `${(visited.size/allLocations.length)*100}%`;
+  document.getElementById('toolVal').textContent = `${toolsSeen.size} / ${uniqueToolCount}`;
+  document.getElementById('toolFill').style.width = `${(toolsSeen.size/uniqueToolCount)*100}%`;
+
+  const banner = document.getElementById('completeBanner');
+  if(visited.size === allLocations.length){
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+function resetMap(){
+  visited.clear();
+  toolsSeen.clear();
+  document.getElementById('placeholder').style.display = 'block';
+  const existingBody = document.querySelector('.detail-body');
+  if(existingBody) existingBody.remove();
+  document.getElementById('completeBanner').classList.remove('show');
+  buildMap();
+  updateStats();
+}
+
+buildMap();
+updateStats();
+</script>
+</body>
+</html>
