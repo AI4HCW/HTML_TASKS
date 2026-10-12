@@ -226,7 +226,7 @@ function buildPipeline(){
 function stage1Content(){
   return `
     <label class="q-label">Type a clinical question you'd want an AI tool to help answer:</label>
-    <input type="text" id="problemInput" class="text-input" placeholder="e.g. Which patients on my ward are likely to deteriorate in the next 6 hours?" value="${escapeHtml(state.problem)}">
+    <input type="text" id="problemInput" class="text-input" placeholder="e.g. Which patients on my ward are likely to deteriorate in the next 12 hours?" value="${escapeHtml(state.problem)}">
     <button class="btn btn-sm" id="problemSubmit">Save this problem</button>
     <div class="mini-feedback" id="problemFeedback" style="display:${state.problem ? 'block' : 'none'}">
       Good — we'll carry <b>"${escapeHtml(state.problem)}"</b> through the rest of this exercise, the way a real project team would.
